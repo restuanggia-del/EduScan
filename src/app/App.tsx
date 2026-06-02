@@ -3,6 +3,8 @@ import { Sidebar } from "./components/Sidebar";
 import { Header } from "./components/Header";
 import { Dashboard } from "./components/Dashboard";
 import { DataSiswa } from "./components/DataSiswa";
+import { ManajemenKelas } from "./components/ManajemenKelas";
+import { GenerateQR } from "./components/GenerateQR";
 
 export default function App() {
   const [currentPage, setCurrentPage] = useState("dashboard");
@@ -14,31 +16,25 @@ export default function App() {
       case "siswa":
         return <DataSiswa />;
       case "kelas":
-        return (
-          <div className="p-6">
-            <h2 className="text-2xl font-bold">Manajemen Kelas</h2>
-            <p className="text-muted-foreground mt-2">Fitur ini akan segera hadir...</p>
-          </div>
-        );
+        return <ManajemenKelas />;
       case "qr":
-        return (
-          <div className="p-6">
-            <h2 className="text-2xl font-bold">Generate QR Code</h2>
-            <p className="text-muted-foreground mt-2">Fitur ini akan segera hadir...</p>
-          </div>
-        );
+        return <GenerateQR />;
       case "rekap":
         return (
           <div className="p-6">
             <h2 className="text-2xl font-bold">Rekap Absensi</h2>
-            <p className="text-muted-foreground mt-2">Fitur ini akan segera hadir...</p>
+            <p className="text-muted-foreground mt-2">
+              Fitur ini akan segera hadir...
+            </p>
           </div>
         );
       case "pengaturan":
         return (
           <div className="p-6">
             <h2 className="text-2xl font-bold">Pengaturan</h2>
-            <p className="text-muted-foreground mt-2">Fitur ini akan segera hadir...</p>
+            <p className="text-muted-foreground mt-2">
+              Fitur ini akan segera hadir...
+            </p>
           </div>
         );
       default:
@@ -53,9 +49,7 @@ export default function App() {
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header />
 
-        <main className="flex-1 overflow-y-auto">
-          {renderPage()}
-        </main>
+        <main className="flex-1 overflow-y-auto">{renderPage()}</main>
       </div>
     </div>
   );
