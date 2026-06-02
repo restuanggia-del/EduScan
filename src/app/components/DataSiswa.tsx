@@ -33,7 +33,6 @@ export function DataSiswa() {
   const [formData, setFormData] = useState<Partial<Student>>({});
   const [errorMsg, setErrorMsg] = useState("");
 
-  // ✅ Fetch data saat komponen pertama kali load
   useEffect(() => {
     fetchStudents();
   }, []);
@@ -71,7 +70,6 @@ export function DataSiswa() {
       student.kelas.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
-  // ✅ Tambah siswa baru ke Supabase
   const handleAddStudent = async () => {
     setErrorMsg("");
     if (formData.nama && formData.nisn && formData.kelas) {
@@ -85,7 +83,6 @@ export function DataSiswa() {
       });
 
       if (error) {
-        // NISN sudah terdaftar
         if (error.code === "23505") {
           setErrorMsg("NISN sudah terdaftar, gunakan NISN yang berbeda.");
         } else {
@@ -99,7 +96,6 @@ export function DataSiswa() {
     }
   };
 
-  // ✅ Edit siswa di Supabase
   const handleEditStudent = async () => {
     setErrorMsg("");
     if (editingStudent && formData.nama && formData.nisn && formData.kelas) {
@@ -125,7 +121,6 @@ export function DataSiswa() {
     }
   };
 
-  // ✅ Hapus siswa dari Supabase
   const handleDeleteStudent = async (id: string) => {
     if (confirm("Apakah Anda yakin ingin menghapus siswa ini?")) {
       const { error } = await supabase.from("siswa").delete().eq("id", id);
@@ -181,7 +176,6 @@ export function DataSiswa() {
             </DialogHeader>
 
             <div className="space-y-4 py-4">
-              {/* ✅ Tampilkan error jika ada */}
               {errorMsg && (
                 <div className="bg-destructive/10 text-destructive text-sm px-4 py-2 rounded-md">
                   {errorMsg}
@@ -320,7 +314,6 @@ export function DataSiswa() {
           </div>
         </CardHeader>
         <CardContent>
-          {/* ✅ Loading state */}
           {loading ? (
             <div className="text-center py-12">
               <p className="text-muted-foreground">Memuat data siswa...</p>

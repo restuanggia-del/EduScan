@@ -5,6 +5,8 @@ import { Dashboard } from "./components/Dashboard";
 import { DataSiswa } from "./components/DataSiswa";
 import { ManajemenKelas } from "./components/ManajemenKelas";
 import { GenerateQR } from "./components/GenerateQR";
+import { ScanAbsensi } from "./components/ScanAbsensi";
+import { Pengaturan } from "./components/Pengaturan";
 
 export default function App() {
   const [currentPage, setCurrentPage] = useState("dashboard");
@@ -19,6 +21,8 @@ export default function App() {
         return <ManajemenKelas />;
       case "qr":
         return <GenerateQR />;
+      case "scan":
+        return <ScanAbsensi />;
       case "rekap":
         return (
           <div className="p-6">
@@ -29,14 +33,7 @@ export default function App() {
           </div>
         );
       case "pengaturan":
-        return (
-          <div className="p-6">
-            <h2 className="text-2xl font-bold">Pengaturan</h2>
-            <p className="text-muted-foreground mt-2">
-              Fitur ini akan segera hadir...
-            </p>
-          </div>
-        );
+        return <Pengaturan />;
       default:
         return <Dashboard />;
     }
