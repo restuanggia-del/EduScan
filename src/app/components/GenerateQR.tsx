@@ -1,9 +1,10 @@
-import { useState, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { Download, Printer, School } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
 import { Label } from "./ui/label";
+import { supabase } from "../../lib/supabaseClient";
 
 interface Student {
   id: string;
@@ -13,29 +14,11 @@ interface Student {
   foto?: string;
 }
 
-const dummyStudents: Student[] = [
-  { id: "1", nama: "Ahmad Fauzi", nisn: "1234567890", kelas: "XII IPA 1" },
-  { id: "2", nama: "Siti Nurhaliza", nisn: "1234567891", kelas: "XI IPA 2" },
-  { id: "3", nama: "Budi Santoso", nisn: "1234567892", kelas: "X IPS 1" },
-  { id: "4", nama: "Dewi Lestari", nisn: "1234567893", kelas: "XII IPS 2" },
-  { id: "5", nama: "Andi Wijaya", nisn: "1234567894", kelas: "XI IPA 1" },
-];
-
-const kelasList = [
-  "XII IPA 1",
-  "XII IPA 2",
-  "XI IPA 1",
-  "XI IPA 2",
-  "X IPS 1",
-  "X IPS 2",
-];
-
 interface StudentCardProps {
   student: Student;
-  showPrintButtons?: boolean;
 }
 
-function StudentCard({ student, showPrintButtons = false }: StudentCardProps) {
+function StudentCard({ student }: StudentCardProps) {
   const qrData = JSON.stringify({
     id: student.id,
     nisn: student.nisn,
@@ -73,12 +56,10 @@ function StudentCard({ student, showPrintButtons = false }: StudentCardProps) {
             <span className="text-muted-foreground">Nama:</span>
             <p className="font-bold text-foreground">{student.nama}</p>
           </div>
-
           <div>
             <span className="text-muted-foreground">NISN:</span>
             <p className="font-bold text-foreground">{student.nisn}</p>
           </div>
-
           <div>
             <span className="text-muted-foreground">Kelas:</span>
             <p className="font-bold text-foreground">{student.kelas}</p>
@@ -100,39 +81,63 @@ function StudentCard({ student, showPrintButtons = false }: StudentCardProps) {
 }
 
 export function GenerateQR() {
+  const [allStudents, setAllStudents] = useState<Student[]>([]);
+  const [kelasList, setKelasList] = useState<string[]>([]);
   const [selectedKelas, setSelectedKelas] = useState<string>("");
   const [selectedStudents, setSelectedStudents] = useState<Student[]>([]);
-  const [previewMode, setPreviewMode] = useState<"single" | "kelas" | "all">(
-    "single",
-  );
+  const [loading, setLoading] = useState(true);
   const printRef = useRef<HTMLDivElement>(null);
+
+  // ✅ Fetch siswa dan kelas dari Supabase
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    setLoading(true);
+
+    const { data, error } = await supabase
+      .from("siswa")
+      .select("id, nama, nisn, kelas, foto_url")
+      .order("kelas", { ascending: true });
+
+    if (error) {
+      console.error("Error fetching siswa:", error.message);
+    } else if (data) {
+      const mapped: Student[] = data.map((s) => ({
+        id: s.id,
+        nama: s.nama,
+        nisn: s.nisn,
+        kelas: s.kelas,
+        foto: s.foto_url,
+      }));
+      setAllStudents(mapped);
+
+      // Ambil daftar kelas unik dari data siswa
+      const uniqueKelas = [...new Set(mapped.map((s) => s.kelas))].sort();
+      setKelasList(uniqueKelas);
+    }
+
+    setLoading(false);
+  };
 
   const handleGenerateSingle = (student: Student) => {
     setSelectedStudents([student]);
-    setPreviewMode("single");
   };
 
   const handleGenerateByKelas = () => {
     if (selectedKelas) {
-      const studentsInKelas = dummyStudents.filter(
-        (s) => s.kelas === selectedKelas,
-      );
-      setSelectedStudents(studentsInKelas);
-      setPreviewMode("kelas");
+      const filtered = allStudents.filter((s) => s.kelas === selectedKelas);
+      setSelectedStudents(filtered);
     }
   };
 
   const handleGenerateAll = () => {
-    setSelectedStudents(dummyStudents);
-    setPreviewMode("all");
+    setSelectedStudents(allStudents);
   };
 
   const handlePrint = () => {
     window.print();
-  };
-
-  const handleDownloadPDF = () => {
-    handlePrint();
   };
 
   return (
@@ -146,6 +151,7 @@ export function GenerateQR() {
         </p>
       </div>
 
+      {/* Kartu Aksi */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <Card>
           <CardHeader>
@@ -155,7 +161,7 @@ export function GenerateQR() {
             <div className="space-y-2">
               <Label>Pilih Kelas</Label>
               <select
-                className="w-full h-9 rounded-md border border-input bg-input-background px-3 text-sm"
+                className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm"
                 value={selectedKelas}
                 onChange={(e) => setSelectedKelas(e.target.value)}
               >
@@ -167,7 +173,6 @@ export function GenerateQR() {
                 ))}
               </select>
             </div>
-
             <Button
               className="w-full"
               onClick={handleGenerateByKelas}
@@ -185,10 +190,13 @@ export function GenerateQR() {
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              Generate kartu untuk seluruh siswa ({dummyStudents.length} siswa)
+              Generate kartu untuk seluruh siswa ({allStudents.length} siswa)
             </p>
-
-            <Button className="w-full" onClick={handleGenerateAll}>
+            <Button
+              className="w-full"
+              onClick={handleGenerateAll}
+              disabled={loading}
+            >
               <Printer className="w-4 h-4" />
               Generate Semua Kartu
             </Button>
@@ -203,7 +211,7 @@ export function GenerateQR() {
             <div className="text-sm space-y-2">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Total Siswa:</span>
-                <span className="font-bold">{dummyStudents.length}</span>
+                <span className="font-bold">{allStudents.length}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Total Kelas:</span>
@@ -218,6 +226,7 @@ export function GenerateQR() {
         </Card>
       </div>
 
+      {/* Tabel Daftar Siswa */}
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
@@ -228,7 +237,7 @@ export function GenerateQR() {
                   <Printer className="w-4 h-4" />
                   Cetak
                 </Button>
-                <Button variant="outline" onClick={handleDownloadPDF}>
+                <Button variant="outline" onClick={handlePrint}>
                   <Download className="w-4 h-4" />
                   Download PDF
                 </Button>
@@ -237,57 +246,70 @@ export function GenerateQR() {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-border">
-                  <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">
-                    No
-                  </th>
-                  <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">
-                    NISN
-                  </th>
-                  <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">
-                    Nama
-                  </th>
-                  <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">
-                    Kelas
-                  </th>
-                  <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">
-                    Aksi
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {dummyStudents.map((student, index) => (
-                  <tr
-                    key={student.id}
-                    className="border-b border-border last:border-0 hover:bg-muted/50"
-                  >
-                    <td className="py-3 px-4">{index + 1}</td>
-                    <td className="py-3 px-4">{student.nisn}</td>
-                    <td className="py-3 px-4 font-medium">{student.nama}</td>
-                    <td className="py-3 px-4 text-muted-foreground">
-                      {student.kelas}
-                    </td>
-                    <td className="py-3 px-4">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleGenerateSingle(student)}
-                      >
-                        <Printer className="w-4 h-4" />
-                        Generate
-                      </Button>
-                    </td>
+          {loading ? (
+            <div className="text-center py-12">
+              <p className="text-muted-foreground">Memuat data siswa...</p>
+            </div>
+          ) : allStudents.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-muted-foreground">
+                Belum ada data siswa. Tambah siswa di menu Data Siswa.
+              </p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-border">
+                    <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">
+                      No
+                    </th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">
+                      NISN
+                    </th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">
+                      Nama
+                    </th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">
+                      Kelas
+                    </th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">
+                      Aksi
+                    </th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {allStudents.map((student, index) => (
+                    <tr
+                      key={student.id}
+                      className="border-b border-border last:border-0 hover:bg-muted/50"
+                    >
+                      <td className="py-3 px-4">{index + 1}</td>
+                      <td className="py-3 px-4">{student.nisn}</td>
+                      <td className="py-3 px-4 font-medium">{student.nama}</td>
+                      <td className="py-3 px-4 text-muted-foreground">
+                        {student.kelas}
+                      </td>
+                      <td className="py-3 px-4">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleGenerateSingle(student)}
+                        >
+                          <Printer className="w-4 h-4" />
+                          Generate
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </CardContent>
       </Card>
 
+      {/* Preview Kartu */}
       {selectedStudents.length > 0 && (
         <Card>
           <CardHeader>
