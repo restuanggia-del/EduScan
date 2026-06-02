@@ -1,4 +1,12 @@
-import { Home, Users, QrCode, FileText, Settings, BarChart3 } from "lucide-react";
+import {
+  Home,
+  Users,
+  QrCode,
+  FileText,
+  Settings,
+  BarChart3,
+  Scan,
+} from "lucide-react";
 import { cn } from "./ui/utils";
 
 interface SidebarProps {
@@ -12,6 +20,7 @@ export function Sidebar({ currentPage, onNavigate }: SidebarProps) {
     { id: "siswa", label: "Data Siswa", icon: Users },
     { id: "kelas", label: "Manajemen Kelas", icon: BarChart3 },
     { id: "qr", label: "Generate QR", icon: QrCode },
+    { id: "scan", label: "Scan Absensi", icon: Scan },
     { id: "rekap", label: "Rekap Absensi", icon: FileText },
     { id: "pengaturan", label: "Pengaturan", icon: Settings },
   ];
@@ -40,7 +49,7 @@ export function Sidebar({ currentPage, onNavigate }: SidebarProps) {
                 "w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors",
                 isActive
                   ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                  : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
               )}
             >
               <Icon className="w-5 h-5" />
@@ -51,9 +60,7 @@ export function Sidebar({ currentPage, onNavigate }: SidebarProps) {
       </nav>
 
       <div className="p-4 border-t border-border">
-        <div className="text-xs text-muted-foreground">
-          © 2026 EduScan v1.0
-        </div>
+        <div className="text-xs text-muted-foreground">© 2026 EduScan v1.0</div>
       </div>
     </div>
   );

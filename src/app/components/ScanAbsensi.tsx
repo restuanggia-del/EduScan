@@ -1,16 +1,11 @@
 import { useState, useEffect, useRef } from "react";
 import { Html5Qrcode } from "html5-qrcode";
-import {
-  Camera,
-  CameraOff,
-  CheckCircle,
-  Clock,
-  School,
-  User,
-} from "lucide-react";
+import { Camera, CameraOff, CheckCircle, Clock, School } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
 import { cn } from "./ui/utils";
+import { supabase } from "../../lib/supabaseClient";
+import { toast } from "sonner";
 
 interface AbsensiRecord {
   id: string;
@@ -25,26 +20,126 @@ interface AbsensiRecord {
   tanggal: string;
 }
 
-const dummyStudents = [
-  { id: "1", nama: "Ahmad Fauzi", nisn: "1234567890", kelas: "XII IPA 1" },
-  { id: "2", nama: "Siti Nurhaliza", nisn: "1234567891", kelas: "XI IPA 2" },
-  { id: "3", nama: "Budi Santoso", nisn: "1234567892", kelas: "X IPS 1" },
-  { id: "4", nama: "Dewi Lestari", nisn: "1234567893", kelas: "XII IPS 2" },
-  { id: "5", nama: "Andi Wijaya", nisn: "1234567894", kelas: "XI IPA 1" },
-];
-
-const JAM_BATAS_MASUK = "07:30";
+interface Settings {
+  jamBatasMasuk: string;
+  whatsappEnabled: boolean;
+  whatsappToken: string;
+  notifMasuk: boolean;
+  notifPulang: boolean;
+  notifTerlambat: boolean;
+  namaSekolah: string;
+}
 
 export function ScanAbsensi() {
   const [mode, setMode] = useState<"masuk" | "pulang">("masuk");
   const [scanning, setScanning] = useState(false);
   const [lastScan, setLastScan] = useState<AbsensiRecord | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
-  const [absensiRecords, setAbsensiRecords] = useState<AbsensiRecord[]>([]);
-  const [errorMessage, setErrorMessage] = useState<string>("");
+  const [todayRecords, setTodayRecords] = useState<AbsensiRecord[]>([]);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [settings, setSettings] = useState<Settings>({
+    jamBatasMasuk: "07:30",
+    whatsappEnabled: false,
+    whatsappToken: "",
+    notifMasuk: true,
+    notifPulang: true,
+    notifTerlambat: true,
+    namaSekolah: "SMA Negeri 1",
+  });
 
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const qrReaderRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    fetchSettings();
+    fetchTodayAbsensi();
+  }, []);
+
+  const fetchSettings = async () => {
+    const { data } = await supabase
+      .from("settings")
+      .select("*")
+      .eq("id", 1)
+      .single();
+
+    if (data) {
+      setSettings({
+        jamBatasMasuk: data.jam_batas_masuk,
+        whatsappEnabled: data.whatsapp_enabled,
+        whatsappToken: data.whatsapp_token || "",
+        notifMasuk: data.notif_masuk,
+        notifPulang: data.notif_pulang,
+        notifTerlambat: data.notif_terlambat,
+        namaSekolah: data.nama_sekolah,
+      });
+    }
+  };
+
+  const fetchTodayAbsensi = async () => {
+    const today = new Date().toISOString().split("T")[0];
+    const { data, error } = await supabase
+      .from("absensi")
+      .select("*, siswa(nama, nisn, kelas, foto_url)")
+      .eq("tanggal", today)
+      .order("waktu_scan", { ascending: false });
+
+    if (error) {
+      console.error("Error fetching absensi:", error.message);
+      return;
+    }
+
+    if (data) {
+      const records: AbsensiRecord[] = [];
+      const seen = new Map();
+
+      data.forEach((a) => {
+        const key = a.siswa_id;
+        if (!seen.has(key)) {
+          seen.set(key, {
+            id: a.id,
+            studentId: a.siswa_id,
+            nama: a.siswa?.nama || "",
+            nisn: a.siswa?.nisn || "",
+            kelas: a.siswa?.kelas || "",
+            foto: a.siswa?.foto_url,
+            jamMasuk:
+              a.status !== "pulang"
+                ? new Date(a.waktu_scan).toLocaleTimeString("id-ID", {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })
+                : undefined,
+            jamPulang:
+              a.status === "pulang"
+                ? new Date(a.waktu_scan).toLocaleTimeString("id-ID", {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })
+                : undefined,
+            status: a.status,
+            tanggal: a.tanggal,
+          });
+        } else {
+          const existing = seen.get(key);
+          if (a.status === "pulang") {
+            existing.jamPulang = new Date(a.waktu_scan).toLocaleTimeString(
+              "id-ID",
+              { hour: "2-digit", minute: "2-digit" },
+            );
+            existing.status = "pulang";
+          } else if (!existing.jamMasuk) {
+            existing.jamMasuk = new Date(a.waktu_scan).toLocaleTimeString(
+              "id-ID",
+              { hour: "2-digit", minute: "2-digit" },
+            );
+          }
+        }
+      });
+
+      seen.forEach((v) => records.push(v));
+      setTodayRecords(records);
+    }
+  };
 
   const playSuccessSound = () => {
     const audioContext = new (
@@ -52,10 +147,8 @@ export function ScanAbsensi() {
     )();
     const oscillator = audioContext.createOscillator();
     const gainNode = audioContext.createGain();
-
     oscillator.connect(gainNode);
     gainNode.connect(audioContext.destination);
-
     oscillator.frequency.value = 800;
     oscillator.type = "sine";
     gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
@@ -63,156 +156,207 @@ export function ScanAbsensi() {
       0.01,
       audioContext.currentTime + 0.5,
     );
-
     oscillator.start(audioContext.currentTime);
     oscillator.stop(audioContext.currentTime + 0.5);
   };
 
-  const getCurrentTime = () => {
-    const now = new Date();
-    return now.toLocaleTimeString("id-ID", {
+  const getCurrentTime = () =>
+    new Date().toLocaleTimeString("id-ID", {
       hour: "2-digit",
       minute: "2-digit",
     });
-  };
-
-  const getCurrentDate = () => {
-    const now = new Date();
-    return now.toLocaleDateString("id-ID");
-  };
 
   const isLate = (jamMasuk: string) => {
-    const [hourMasuk, minuteMasuk] = jamMasuk.split(":").map(Number);
-    const [hourBatas, minuteBatas] = JAM_BATAS_MASUK.split(":").map(Number);
-
-    const timeMasuk = hourMasuk * 60 + minuteMasuk;
-    const timeBatas = hourBatas * 60 + minuteBatas;
-
-    return timeMasuk > timeBatas;
+    const [h, m] = jamMasuk.split(":").map(Number);
+    const [hb, mb] = settings.jamBatasMasuk.split(":").map(Number);
+    return h * 60 + m > hb * 60 + mb;
   };
 
   const sendWhatsAppNotification = async (
-    record: AbsensiRecord,
-    notifType: "masuk" | "pulang" | "terlambat",
+    noWA: string,
+    nama: string,
+    jam: string,
+    type: "masuk" | "pulang" | "terlambat",
   ) => {
-    console.log("Sending WhatsApp notification:", notifType, record);
+    if (!settings.whatsappEnabled || !settings.whatsappToken) return;
+    if (type === "masuk" && !settings.notifMasuk) return;
+    if (type === "pulang" && !settings.notifPulang) return;
+    if (type === "terlambat" && !settings.notifTerlambat) return;
 
     let message = "";
-    if (notifType === "masuk") {
-      message = `Ananda ${record.nama} telah hadir di sekolah pada pukul ${record.jamMasuk} WIB.\n\nSMAN 1 Bandar Lampung`;
-    } else if (notifType === "terlambat") {
-      message = `Ananda ${record.nama} terlambat masuk sekolah.\n\nJam Masuk:\n${record.jamMasuk} WIB\n\nSMAN 1 Bandar Lampung`;
-    } else if (notifType === "pulang") {
-      message = `Ananda ${record.nama} telah meninggalkan sekolah pada pukul ${record.jamPulang} WIB.\n\nSMAN 1 Bandar Lampung`;
+    if (type === "masuk") {
+      message = `Ananda ${nama} telah hadir di sekolah pada pukul ${jam} WIB.\n\n${settings.namaSekolah}`;
+    } else if (type === "terlambat") {
+      message = `Ananda ${nama} terlambat masuk sekolah.\n\nJam Masuk:\n${jam} WIB\n\n${settings.namaSekolah}`;
+    } else {
+      message = `Ananda ${nama} telah meninggalkan sekolah pada pukul ${jam} WIB.\n\n${settings.namaSekolah}`;
+    }
+
+    try {
+      await fetch("https://api.fonnte.com/send", {
+        method: "POST",
+        headers: {
+          Authorization: settings.whatsappToken,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ target: noWA, message }),
+      });
+    } catch (err) {
+      console.error("Gagal kirim WA:", err);
     }
   };
 
-  const handleScanSuccess = (decodedText: string) => {
+  const handleScanSuccess = async (decodedText: string) => {
     try {
       const data = JSON.parse(decodedText);
-      const student = dummyStudents.find((s) => s.id === data.id);
 
-      if (!student) {
-        setErrorMessage("Siswa tidak ditemukan!");
+      // Ambil data siswa dari Supabase
+      const { data: siswa, error: siswaError } = await supabase
+        .from("siswa")
+        .select("id, nama, nisn, kelas, foto_url, no_wa")
+        .eq("id", data.id)
+        .single();
+
+      if (siswaError || !siswa) {
+        setErrorMessage("Siswa tidak ditemukan di database!");
         return;
       }
 
-      const today = getCurrentDate();
-      const existingRecord = absensiRecords.find(
-        (r) => r.studentId === data.id && r.tanggal === today,
+      const today = new Date().toISOString().split("T")[0];
+
+      const { data: existing } = await supabase
+        .from("absensi")
+        .select("*")
+        .eq("siswa_id", siswa.id)
+        .eq("tanggal", today);
+
+      const sudahMasuk = existing?.some(
+        (a) => a.status === "hadir" || a.status === "terlambat",
       );
+      const sudahPulang = existing?.some((a) => a.status === "pulang");
 
       if (mode === "masuk") {
-        if (existingRecord?.jamMasuk) {
-          setErrorMessage("Siswa sudah absen masuk hari ini!");
+        if (sudahMasuk) {
+          setErrorMessage(`${siswa.nama} sudah absen masuk hari ini!`);
           return;
         }
 
         const jamMasuk = getCurrentTime();
         const status = isLate(jamMasuk) ? "terlambat" : "hadir";
 
+        const { error } = await supabase.from("absensi").insert({
+          siswa_id: siswa.id,
+          tanggal: today,
+          status,
+          keterangan: "",
+        });
+
+        if (error) {
+          setErrorMessage("Gagal menyimpan absensi: " + error.message);
+          return;
+        }
+
         const newRecord: AbsensiRecord = {
           id: Date.now().toString(),
-          studentId: data.id,
-          nama: student.nama,
-          nisn: student.nisn,
-          kelas: student.kelas,
+          studentId: siswa.id,
+          nama: siswa.nama,
+          nisn: siswa.nisn,
+          kelas: siswa.kelas,
+          foto: siswa.foto_url,
           jamMasuk,
           status,
           tanggal: today,
         };
 
-        setAbsensiRecords([...absensiRecords, newRecord]);
         setLastScan(newRecord);
         setShowSuccess(true);
         playSuccessSound();
+        toast.success(`${siswa.nama} berhasil absen masuk!`);
 
-        sendWhatsAppNotification(
-          newRecord,
-          status === "terlambat" ? "terlambat" : "masuk",
-        );
+        if (siswa.no_wa) {
+          await sendWhatsAppNotification(
+            siswa.no_wa,
+            siswa.nama,
+            jamMasuk,
+            status === "terlambat" ? "terlambat" : "masuk",
+          );
+        }
 
         setTimeout(() => setShowSuccess(false), 5000);
       } else {
-        if (!existingRecord) {
-          setErrorMessage("Siswa belum absen masuk!");
+        if (!sudahMasuk) {
+          setErrorMessage(`${siswa.nama} belum absen masuk!`);
           return;
         }
-
-        if (existingRecord.jamPulang) {
-          setErrorMessage("Siswa sudah absen pulang hari ini!");
+        if (sudahPulang) {
+          setErrorMessage(`${siswa.nama} sudah absen pulang hari ini!`);
           return;
         }
 
         const jamPulang = getCurrentTime();
-        const updatedRecord = {
-          ...existingRecord,
+
+        const { error } = await supabase.from("absensi").insert({
+          siswa_id: siswa.id,
+          tanggal: today,
+          status: "pulang",
+          keterangan: "",
+        });
+
+        if (error) {
+          setErrorMessage("Gagal menyimpan absensi: " + error.message);
+          return;
+        }
+
+        const updatedRecord: AbsensiRecord = {
+          id: Date.now().toString(),
+          studentId: siswa.id,
+          nama: siswa.nama,
+          nisn: siswa.nisn,
+          kelas: siswa.kelas,
+          foto: siswa.foto_url,
           jamPulang,
-          status: "pulang" as const,
+          status: "pulang",
+          tanggal: today,
         };
 
-        setAbsensiRecords(
-          absensiRecords.map((r) =>
-            r.id === existingRecord.id ? updatedRecord : r,
-          ),
-        );
         setLastScan(updatedRecord);
         setShowSuccess(true);
         playSuccessSound();
+        toast.success(`${siswa.nama} berhasil absen pulang!`);
 
-        sendWhatsAppNotification(updatedRecord, "pulang");
+        if (siswa.no_wa) {
+          await sendWhatsAppNotification(
+            siswa.no_wa,
+            siswa.nama,
+            jamPulang,
+            "pulang",
+          );
+        }
 
         setTimeout(() => setShowSuccess(false), 5000);
       }
 
       setErrorMessage("");
-    } catch (error) {
-      console.error("Error processing QR code:", error);
+      await fetchTodayAbsensi();
+    } catch (err) {
+      console.error("Error:", err);
       setErrorMessage("Format QR code tidak valid!");
     }
   };
 
   const startScanning = async () => {
     try {
-      if (!qrReaderRef.current) return;
-
       const html5QrCode = new Html5Qrcode("qr-reader");
       scannerRef.current = html5QrCode;
-
       await html5QrCode.start(
         { facingMode: "environment" },
-        {
-          fps: 10,
-          qrbox: { width: 250, height: 250 },
-        },
+        { fps: 10, qrbox: { width: 250, height: 250 } },
         handleScanSuccess,
         undefined,
       );
-
       setScanning(true);
       setErrorMessage("");
-    } catch (err) {
-      console.error("Error starting scanner:", err);
+    } catch {
       setErrorMessage(
         "Tidak dapat mengakses kamera. Pastikan izin kamera sudah diberikan.",
       );
@@ -226,7 +370,7 @@ export function ScanAbsensi() {
         scannerRef.current = null;
         setScanning(false);
       } catch (err) {
-        console.error("Error stopping scanner:", err);
+        console.error(err);
       }
     }
   };
@@ -238,10 +382,6 @@ export function ScanAbsensi() {
       }
     };
   }, []);
-
-  const todayRecords = absensiRecords.filter(
-    (r) => r.tanggal === getCurrentDate(),
-  );
 
   return (
     <div className="p-6 space-y-6">
@@ -261,23 +401,13 @@ export function ScanAbsensi() {
                 <div className="flex gap-2">
                   <Button
                     variant={mode === "masuk" ? "default" : "outline"}
-                    onClick={() => {
-                      setMode("masuk");
-                      if (scanning) {
-                        stopScanning().then(() => startScanning());
-                      }
-                    }}
+                    onClick={() => setMode("masuk")}
                   >
                     Absen Masuk
                   </Button>
                   <Button
                     variant={mode === "pulang" ? "default" : "outline"}
-                    onClick={() => {
-                      setMode("pulang");
-                      if (scanning) {
-                        stopScanning().then(() => startScanning());
-                      }
-                    }}
+                    onClick={() => setMode("pulang")}
                   >
                     Absen Pulang
                   </Button>
@@ -286,23 +416,22 @@ export function ScanAbsensi() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                <div
-                  id="qr-reader"
-                  ref={qrReaderRef}
-                  className={cn(
-                    "w-full rounded-lg overflow-hidden bg-muted",
-                    !scanning && "h-[400px] flex items-center justify-center",
-                  )}
-                >
-                  {!scanning && (
+                {!scanning && (
+                  <div className="w-full h-[400px] rounded-lg bg-muted flex items-center justify-center">
                     <div className="text-center">
                       <Camera className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
                       <p className="text-muted-foreground">
                         Kamera belum aktif
                       </p>
                     </div>
-                  )}
-                </div>
+                  </div>
+                )}
+
+                <div
+                  id="qr-reader"
+                  ref={qrReaderRef}
+                  className="w-full rounded-lg overflow-hidden"
+                />
 
                 <div className="flex gap-2">
                   {!scanning ? (
@@ -338,23 +467,19 @@ export function ScanAbsensi() {
                   <div className="bg-primary text-primary-foreground w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0">
                     <CheckCircle className="w-6 h-6" />
                   </div>
-
                   <div className="flex-1">
                     <h3 className="text-xl font-bold text-primary mb-4">
                       ✓ Absensi Berhasil
                     </h3>
-
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <p className="text-sm text-muted-foreground">Nama:</p>
                         <p className="font-bold">{lastScan.nama}</p>
                       </div>
-
                       <div>
                         <p className="text-sm text-muted-foreground">Kelas:</p>
                         <p className="font-bold">{lastScan.kelas}</p>
                       </div>
-
                       <div>
                         <p className="text-sm text-muted-foreground">
                           {mode === "masuk" ? "Jam Masuk:" : "Jam Pulang:"}
@@ -366,7 +491,6 @@ export function ScanAbsensi() {
                           WIB
                         </p>
                       </div>
-
                       {mode === "masuk" && (
                         <div>
                           <p className="text-sm text-muted-foreground">
@@ -388,7 +512,6 @@ export function ScanAbsensi() {
                       )}
                     </div>
                   </div>
-
                   {lastScan.foto && (
                     <img
                       src={lastScan.foto}
@@ -402,6 +525,7 @@ export function ScanAbsensi() {
           )}
         </div>
 
+        {/* Sidebar kanan */}
         <div className="space-y-6">
           <Card>
             <CardHeader>
@@ -414,14 +538,12 @@ export function ScanAbsensi() {
                   {todayRecords.filter((r) => r.status === "hadir").length}
                 </span>
               </div>
-
               <div className="flex items-center justify-between p-3 bg-amber-100 rounded-lg">
                 <span className="text-sm">Terlambat</span>
                 <span className="font-bold text-lg">
                   {todayRecords.filter((r) => r.status === "terlambat").length}
                 </span>
               </div>
-
               <div className="flex items-center justify-between p-3 bg-secondary/10 rounded-lg">
                 <span className="text-sm">Sudah Pulang</span>
                 <span className="font-bold text-lg">
@@ -440,10 +562,11 @@ export function ScanAbsensi() {
                 <Clock className="w-4 h-4 text-muted-foreground mt-0.5" />
                 <div>
                   <p className="font-medium">Batas Waktu Masuk</p>
-                  <p className="text-muted-foreground">{JAM_BATAS_MASUK} WIB</p>
+                  <p className="text-muted-foreground">
+                    {settings.jamBatasMasuk} WIB
+                  </p>
                 </div>
               </div>
-
               <div className="flex items-start gap-2">
                 <School className="w-4 h-4 text-muted-foreground mt-0.5" />
                 <div>
@@ -453,11 +576,26 @@ export function ScanAbsensi() {
                   </p>
                 </div>
               </div>
+              <div className="flex items-start gap-2">
+                <div
+                  className={cn(
+                    "w-2 h-2 rounded-full mt-1.5",
+                    settings.whatsappEnabled ? "bg-green-500" : "bg-gray-400",
+                  )}
+                />
+                <div>
+                  <p className="font-medium">Notifikasi WA</p>
+                  <p className="text-muted-foreground">
+                    {settings.whatsappEnabled ? "Aktif" : "Nonaktif"}
+                  </p>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </div>
       </div>
 
+      {/* Tabel riwayat */}
       <Card>
         <CardHeader>
           <CardTitle>Riwayat Absensi Hari Ini</CardTitle>
@@ -522,7 +660,6 @@ export function ScanAbsensi() {
                 ))}
               </tbody>
             </table>
-
             {todayRecords.length === 0 && (
               <div className="text-center py-12">
                 <p className="text-muted-foreground">

@@ -8,6 +8,7 @@ import { GenerateQR } from "./components/GenerateQR";
 import { ScanAbsensi } from "./components/ScanAbsensi";
 import { Pengaturan } from "./components/Pengaturan";
 import { Toaster } from "sonner";
+import { RekapAbsensi } from "./components/RekapAbsensi";
 
 export default function App() {
   const [currentPage, setCurrentPage] = useState("dashboard");
@@ -25,14 +26,7 @@ export default function App() {
       case "scan":
         return <ScanAbsensi />;
       case "rekap":
-        return (
-          <div className="p-6">
-            <h2 className="text-2xl font-bold">Rekap Absensi</h2>
-            <p className="text-muted-foreground mt-2">
-              Fitur ini akan segera hadir...
-            </p>
-          </div>
-        );
+        return <RekapAbsensi />;
       case "pengaturan":
         return <Pengaturan />;
       default:

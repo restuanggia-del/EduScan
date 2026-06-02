@@ -88,7 +88,6 @@ export function GenerateQR() {
   const [loading, setLoading] = useState(true);
   const printRef = useRef<HTMLDivElement>(null);
 
-  // ✅ Fetch siswa dan kelas dari Supabase
   useEffect(() => {
     fetchData();
   }, []);
@@ -233,11 +232,11 @@ export function GenerateQR() {
             <CardTitle>Daftar Siswa</CardTitle>
             {selectedStudents.length > 0 && (
               <div className="flex gap-2">
-                <Button onClick={handlePrint}>
+                <Button onClick={() => window.print()}>
                   <Printer className="w-4 h-4" />
                   Cetak
                 </Button>
-                <Button variant="outline" onClick={handlePrint}>
+                <Button variant="outline" onClick={() => window.print()}>
                   <Download className="w-4 h-4" />
                   Download PDF
                 </Button>
