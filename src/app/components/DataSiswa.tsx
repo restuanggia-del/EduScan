@@ -13,6 +13,7 @@ import {
 } from "./ui/dialog";
 import { Label } from "./ui/label";
 import { supabase } from "../../lib/supabaseClient";
+import { toast } from "sonner";
 
 interface Student {
   id: string;
@@ -96,6 +97,7 @@ export function DataSiswa() {
         await fetchStudents();
         setFormData({});
         setIsAddDialogOpen(false);
+        toast.success("Siswa berhasil ditambahkan!");
       }
     }
   };
@@ -122,6 +124,7 @@ export function DataSiswa() {
         await fetchStudents();
         setEditingStudent(null);
         setFormData({});
+        toast.success("Data siswa berhasil diperbarui!");
       }
     }
   };
@@ -133,9 +136,10 @@ export function DataSiswa() {
       .delete()
       .eq("id", deletingId);
     if (error) {
-      alert("Gagal menghapus siswa: " + error.message);
+      toast.error("Gagal menghapus siswa: " + error.message);
     } else {
       await fetchStudents();
+      toast.success("Siswa berhasil dihapus!");
     }
     setDeletingId(null);
   };

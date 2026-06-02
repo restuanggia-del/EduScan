@@ -7,6 +7,7 @@ import { ManajemenKelas } from "./components/ManajemenKelas";
 import { GenerateQR } from "./components/GenerateQR";
 import { ScanAbsensi } from "./components/ScanAbsensi";
 import { Pengaturan } from "./components/Pengaturan";
+import { Toaster } from "sonner";
 
 export default function App() {
   const [currentPage, setCurrentPage] = useState("dashboard");
@@ -48,6 +49,7 @@ export default function App() {
 
         <main className="flex-1 overflow-y-auto">{renderPage()}</main>
       </div>
+      <Toaster richColors position="top-right" />
     </div>
   );
 }
