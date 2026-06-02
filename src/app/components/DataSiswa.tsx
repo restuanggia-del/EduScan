@@ -6,6 +6,7 @@ import { Input } from "./ui/input";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -32,6 +33,8 @@ export function DataSiswa() {
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
   const [formData, setFormData] = useState<Partial<Student>>({});
   const [errorMsg, setErrorMsg] = useState("");
+  const [uploading, setUploading] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchStudents();
@@ -80,6 +83,7 @@ export function DataSiswa() {
         alamat: formData.alamat || "",
         nama_ortu: formData.namaOrtu || "",
         no_wa: formData.noWA || "",
+        foto_url: formData.foto || null,
       });
 
       if (error) {
@@ -108,6 +112,7 @@ export function DataSiswa() {
           alamat: formData.alamat || "",
           nama_ortu: formData.namaOrtu || "",
           no_wa: formData.noWA || "",
+          foto_url: formData.foto || null,
         })
         .eq("id", editingStudent.id);
 
@@ -121,18 +126,42 @@ export function DataSiswa() {
     }
   };
 
-  const handleDeleteStudent = async (id: string) => {
-    if (confirm("Apakah Anda yakin ingin menghapus siswa ini?")) {
-      const { error } = await supabase.from("siswa").delete().eq("id", id);
-
-      if (error) {
-        alert("Gagal menghapus siswa: " + error.message);
-      } else {
-        await fetchStudents();
-      }
+  const handleDeleteStudent = async () => {
+    if (!deletingId) return;
+    const { error } = await supabase
+      .from("siswa")
+      .delete()
+      .eq("id", deletingId);
+    if (error) {
+      alert("Gagal menghapus siswa: " + error.message);
+    } else {
+      await fetchStudents();
     }
+    setDeletingId(null);
   };
 
+  const handleUploadFoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploading(true);
+    const fileName = `${Date.now()}-${file.name}`;
+
+    const { error } = await supabase.storage
+      .from("foto-siswa")
+      .upload(fileName, file);
+
+    if (error) {
+      alert("Gagal upload foto: " + error.message);
+    } else {
+      const { data } = supabase.storage
+        .from("foto-siswa")
+        .getPublicUrl(fileName);
+
+      setFormData({ ...formData, foto: data.publicUrl });
+    }
+    setUploading(false);
+  };
   const openEditDialog = (student: Student) => {
     setEditingStudent(student);
     setFormData(student);
@@ -158,21 +187,27 @@ export function DataSiswa() {
           </p>
         </div>
 
+        <button
+          onClick={() => setIsAddDialogOpen(true)}
+          className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm font-medium hover:bg-primary/90"
+        >
+          <Plus className="w-4 h-4" />
+          Tambah Siswa
+        </button>
         <Dialog
           open={isAddDialogOpen || editingStudent !== null}
           onOpenChange={closeDialog}
         >
-          <DialogTrigger asChild>
-            <Button onClick={() => setIsAddDialogOpen(true)}>
-              <Plus className="w-4 h-4" />
-              Tambah Siswa
-            </Button>
-          </DialogTrigger>
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
                 {editingStudent ? "Edit Data Siswa" : "Tambah Siswa Baru"}
               </DialogTitle>
+              <DialogDescription>
+                {editingStudent
+                  ? "Ubah data siswa yang dipilih."
+                  : "Isi form berikut untuk menambah siswa baru."}
+              </DialogDescription>
             </DialogHeader>
 
             <div className="space-y-4 py-4">
@@ -196,10 +231,17 @@ export function DataSiswa() {
                       <Upload className="w-8 h-8 text-muted-foreground" />
                     )}
                   </div>
-                  <Button variant="outline" size="sm">
+                  <label className="inline-flex items-center gap-2 border border-input px-3 py-1.5 rounded-md text-sm hover:bg-muted cursor-pointer">
                     <Upload className="w-4 h-4" />
-                    Upload Foto
-                  </Button>
+                    {uploading ? "Mengupload..." : "Upload Foto"}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleUploadFoto}
+                      disabled={uploading}
+                    />
+                  </label>
                 </div>
               </div>
 
@@ -324,6 +366,9 @@ export function DataSiswa() {
                 <thead>
                   <tr className="border-b border-border">
                     <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">
+                      Foto
+                    </th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">
                       NISN
                     </th>
                     <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">
@@ -349,6 +394,19 @@ export function DataSiswa() {
                       key={student.id}
                       className="border-b border-border last:border-0 hover:bg-muted/50"
                     >
+                      <td className="py-3 px-4">
+                        {student.foto ? (
+                          <img
+                            src={student.foto}
+                            alt={student.nama}
+                            className="w-10 h-10 rounded-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center text-xs text-muted-foreground">
+                            {student.nama.charAt(0).toUpperCase()}
+                          </div>
+                        )}
+                      </td>
                       <td className="py-3 px-4">{student.nisn}</td>
                       <td className="py-3 px-4 font-medium">{student.nama}</td>
                       <td className="py-3 px-4 text-muted-foreground">
@@ -369,13 +427,12 @@ export function DataSiswa() {
                           >
                             <Edit className="w-4 h-4" />
                           </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleDeleteStudent(student.id)}
+                          <button
+                            onClick={() => setDeletingId(student.id)}
+                            className="p-2 rounded-md hover:bg-muted"
                           >
                             <Trash2 className="w-4 h-4 text-destructive" />
-                          </Button>
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -394,6 +451,34 @@ export function DataSiswa() {
           )}
         </CardContent>
       </Card>
+      <Dialog
+        open={deletingId !== null}
+        onOpenChange={() => setDeletingId(null)}
+      >
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Hapus Siswa</DialogTitle>
+            <DialogDescription>
+              Apakah kamu yakin ingin menghapus siswa ini? Data yang dihapus
+              tidak bisa dikembalikan.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end gap-2 pt-4">
+            <button
+              onClick={() => setDeletingId(null)}
+              className="px-4 py-2 rounded-md border border-input text-sm hover:bg-muted"
+            >
+              Batal
+            </button>
+            <button
+              onClick={handleDeleteStudent}
+              className="px-4 py-2 rounded-md bg-destructive text-destructive-foreground text-sm hover:bg-destructive/90"
+            >
+              Hapus
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
