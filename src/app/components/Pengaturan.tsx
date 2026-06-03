@@ -394,15 +394,15 @@ export function Pengaturan() {
               {[
                 {
                   label: "Template Masuk Tepat Waktu",
-                  msg: `Ananda [Nama Siswa] telah hadir di sekolah pada pukul [Jam] WIB.\n\n${settings.namaSekolah}`,
+                  msg: `Siswa [Nama Siswa] telah hadir di sekolah pada pukul [Jam] WIB.\n\n${settings.namaSekolah}`,
                 },
                 {
                   label: "Template Terlambat",
-                  msg: `Ananda [Nama Siswa] terlambat masuk sekolah.\n\nJam Masuk:\n[Jam] WIB\n\n${settings.namaSekolah}`,
+                  msg: `Siswa [Nama Siswa] terlambat masuk sekolah.\n\nJam Masuk:\n[Jam] WIB\n\n${settings.namaSekolah}`,
                 },
                 {
                   label: "Template Pulang",
-                  msg: `Ananda [Nama Siswa] telah meninggalkan sekolah pada pukul [Jam] WIB.\n\n${settings.namaSekolah}`,
+                  msg: `Siswa [Nama Siswa] telah meninggalkan sekolah pada pukul [Jam] WIB.\n\n${settings.namaSekolah}`,
                 },
               ].map((t) => (
                 <div key={t.label} className="p-4 bg-muted rounded-lg">

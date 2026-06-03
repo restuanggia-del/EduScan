@@ -124,7 +124,7 @@ export function Login() {
                 onChange={(e) =>
                   setFormData({ ...formData, email: e.target.value })
                 }
-                placeholder="nama@sekolah.sch.id"
+                placeholder="example@gmail.com"
               />
             </div>
 
