@@ -86,7 +86,7 @@ export default function App() {
         <Header onSearch={setSearchQuery} onNavigate={setCurrentPage} />
         <main className="flex-1 overflow-y-auto">{renderPage()}</main>
       </div>
-      <Toaster richColors position="top-right" />
+      <Toaster richColors position="top-center" />
     </div>
   );
 }

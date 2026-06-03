@@ -447,7 +447,7 @@ export function Pengaturan() {
                         (settings[t.key as keyof typeof settings] as string) ||
                         ""
                       )
-                        .replace("[nama]", "Ahmad Fauzi")
+                        .replace("[nama]", "Restu Anggia")
                         .replace("[jam]", "07:25")}
                     </p>
                   </div>

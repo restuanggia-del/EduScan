@@ -519,13 +519,13 @@ export function DataSiswa({
           <div className="flex justify-end gap-2 pt-4">
             <button
               onClick={() => setDeletingId(null)}
-              className="px-4 py-2 rounded-md border border-input text-sm hover:bg-muted"
+              className="px-4 py-2 rounded-md border border-input text-sm hover:bg-muted cursor-pointer"
             >
               Batal
             </button>
             <button
               onClick={handleDeleteStudent}
-              className="px-4 py-2 rounded-md bg-destructive text-destructive-foreground text-sm hover:bg-destructive/90"
+              className="px-4 py-2 rounded-md bg-destructive text-destructive-foreground text-sm hover:bg-destructive/90 cursor-pointer"
             >
               Hapus
             </button>

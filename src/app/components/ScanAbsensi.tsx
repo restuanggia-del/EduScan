@@ -760,7 +760,7 @@ export function ScanAbsensi() {
                                   handleManualAbsensi(siswa, "izin")
                                 }
                                 disabled={manualLoading}
-                                className="px-2.5 py-1 rounded-md bg-blue-100 text-blue-700 text-xs font-medium hover:bg-blue-200 transition-colors"
+                                className="px-2.5 py-1 rounded-md bg-blue-100 text-blue-700 text-xs font-medium hover:bg-blue-200 transition-colors cursor-pointer"
                               >
                                 Izin
                               </button>
@@ -769,7 +769,7 @@ export function ScanAbsensi() {
                                   handleManualAbsensi(siswa, "sakit")
                                 }
                                 disabled={manualLoading}
-                                className="px-2.5 py-1 rounded-md bg-green-100 text-green-700 text-xs font-medium hover:bg-green-200 transition-colors"
+                                className="px-2.5 py-1 rounded-md bg-green-100 text-green-700 text-xs font-medium hover:bg-green-200 transition-colors cursor-pointer"
                               >
                                 Sakit
                               </button>
@@ -778,7 +778,7 @@ export function ScanAbsensi() {
                                   handleManualAbsensi(siswa, "alfa")
                                 }
                                 disabled={manualLoading}
-                                className="px-2.5 py-1 rounded-md bg-destructive/10 text-destructive text-xs font-medium hover:bg-destructive/20 transition-colors"
+                                className="px-2.5 py-1 rounded-md bg-destructive/10 text-destructive text-xs font-medium hover:bg-destructive/20 transition-colors cursor-pointer"
                               >
                                 Alfa
                               </button>
