@@ -1,8 +1,17 @@
 import { useState, useEffect, useRef } from "react";
 import { Html5Qrcode } from "html5-qrcode";
-import { Camera, CameraOff, CheckCircle, Clock, School } from "lucide-react";
+import {
+  Camera,
+  CameraOff,
+  CheckCircle,
+  Clock,
+  School,
+  Search,
+  UserX,
+} from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
+import { Input } from "./ui/input";
 import { cn } from "./ui/utils";
 import { supabase } from "../../lib/supabaseClient";
 import { toast } from "sonner";
@@ -16,8 +25,17 @@ interface AbsensiRecord {
   foto?: string;
   jamMasuk?: string;
   jamPulang?: string;
-  status: "hadir" | "terlambat" | "pulang";
+  status: "hadir" | "terlambat" | "izin" | "sakit" | "alfa" | "pulang";
   tanggal: string;
+}
+
+interface Siswa {
+  id: string;
+  nama: string;
+  nisn: string;
+  kelas: string;
+  foto_url?: string;
+  no_wa?: string;
 }
 
 export function ScanAbsensi() {
@@ -28,12 +46,20 @@ export function ScanAbsensi() {
   const [todayRecords, setTodayRecords] = useState<AbsensiRecord[]>([]);
   const [errorMessage, setErrorMessage] = useState("");
 
+  // State untuk input manual
+  const [showManual, setShowManual] = useState(false);
+  const [manualSearch, setManualSearch] = useState("");
+  const [allSiswa, setAllSiswa] = useState<Siswa[]>([]);
+  const [filteredSiswa, setFilteredSiswa] = useState<Siswa[]>([]);
+  const [manualLoading, setManualLoading] = useState(false);
+
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const qrReaderRef = useRef<HTMLDivElement>(null);
   const isProcessingRef = useRef(false);
 
   useEffect(() => {
     fetchTodayAbsensi();
+    fetchAllSiswa();
   }, []);
 
   useEffect(() => {
@@ -43,6 +69,30 @@ export function ScanAbsensi() {
       }
     };
   }, []);
+
+  // Filter siswa saat search manual
+  useEffect(() => {
+    if (manualSearch.trim() === "") {
+      setFilteredSiswa(allSiswa);
+    } else {
+      setFilteredSiswa(
+        allSiswa.filter(
+          (s) =>
+            s.nama.toLowerCase().includes(manualSearch.toLowerCase()) ||
+            s.nisn.includes(manualSearch) ||
+            s.kelas.toLowerCase().includes(manualSearch.toLowerCase()),
+        ),
+      );
+    }
+  }, [manualSearch, allSiswa]);
+
+  const fetchAllSiswa = async () => {
+    const { data } = await supabase
+      .from("siswa")
+      .select("id, nama, nisn, kelas, foto_url, no_wa")
+      .order("nama");
+    if (data) setAllSiswa(data);
+  };
 
   const fetchTodayAbsensi = async () => {
     const today = new Date().toISOString().split("T")[0];
@@ -63,9 +113,7 @@ export function ScanAbsensi() {
         const key = a.siswa_id;
         const jam = (() => {
           const d = new Date(a.waktu_scan);
-          return `${String(d.getHours()).padStart(2, "0")}:${String(
-            d.getMinutes(),
-          ).padStart(2, "0")}`;
+          return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
         })();
         if (!seen.has(key)) {
           seen.set(key, {
@@ -134,7 +182,7 @@ export function ScanAbsensi() {
     noWA: string,
     nama: string,
     jam: string,
-    type: "masuk" | "pulang" | "terlambat",
+    type: "masuk" | "pulang" | "terlambat" | "izin" | "sakit" | "alfa",
     namaSekolah: string,
     token: string,
     notifSettings: {
@@ -144,25 +192,96 @@ export function ScanAbsensi() {
     },
   ) => {
     if (!token) return;
-    if (type === "masuk" && !notifSettings.notifMasuk) return;
-    if (type === "pulang" && !notifSettings.notifPulang) return;
-    if (type === "terlambat" && !notifSettings.notifTerlambat) return;
 
-    const messages = {
+    let nomor = noWA.replace(/\s+/g, "");
+    if (nomor.startsWith("0")) nomor = "62" + nomor.slice(1);
+    else if (nomor.startsWith("+")) nomor = nomor.slice(1);
+
+    const messages: Record<string, string> = {
       masuk: `Ananda ${nama} telah hadir di sekolah pada pukul ${jam} WIB.\n\n${namaSekolah}`,
       terlambat: `Ananda ${nama} terlambat masuk sekolah.\n\nJam Masuk:\n${jam} WIB\n\n${namaSekolah}`,
       pulang: `Ananda ${nama} telah meninggalkan sekolah pada pukul ${jam} WIB.\n\n${namaSekolah}`,
+      izin: `Ananda ${nama} tidak hadir hari ini dengan keterangan *Izin*.\n\n${namaSekolah}`,
+      sakit: `Ananda ${nama} tidak hadir hari ini dengan keterangan *Sakit*.\n\n${namaSekolah}`,
+      alfa: `Ananda ${nama} tidak hadir hari ini tanpa keterangan (*Alfa*).\n\n${namaSekolah}`,
     };
+
+    if (type === "masuk" && !notifSettings.notifMasuk) return;
+    if (type === "pulang" && !notifSettings.notifPulang) return;
+    if (type === "terlambat" && !notifSettings.notifTerlambat) return;
 
     try {
       await fetch("https://api.fonnte.com/send", {
         method: "POST",
         headers: { Authorization: token, "Content-Type": "application/json" },
-        body: JSON.stringify({ target: noWA, message: messages[type] }),
+        body: JSON.stringify({ target: nomor, message: messages[type] }),
       });
     } catch (err) {
       console.error("Gagal kirim WA:", err);
     }
+  };
+
+  // Input manual Izin/Sakit/Alfa
+  const handleManualAbsensi = async (
+    siswa: Siswa,
+    status: "izin" | "sakit" | "alfa",
+  ) => {
+    setManualLoading(true);
+    const today = new Date().toISOString().split("T")[0];
+
+    // Cek sudah absen belum
+    const { data: existing } = await supabase
+      .from("absensi")
+      .select("status")
+      .eq("siswa_id", siswa.id)
+      .eq("tanggal", today);
+
+    const sudahAbsen = existing && existing.length > 0;
+    if (sudahAbsen) {
+      toast.error(`${siswa.nama} sudah tercatat absen hari ini!`);
+      setManualLoading(false);
+      return;
+    }
+
+    const { error } = await supabase.from("absensi").insert({
+      siswa_id: siswa.id,
+      tanggal: today,
+      status,
+      keterangan: status,
+    });
+
+    if (error) {
+      toast.error("Gagal mencatat absensi: " + error.message);
+    } else {
+      toast.success(`${siswa.nama} dicatat ${status.toUpperCase()}!`);
+      playSuccessSound();
+
+      // Kirim notif WA
+      const { data: settingsData } = await supabase
+        .from("settings")
+        .select("*")
+        .eq("id", 1)
+        .single();
+
+      if (settingsData?.whatsapp_enabled && siswa.no_wa) {
+        await sendWhatsAppNotification(
+          siswa.no_wa,
+          siswa.nama,
+          getCurrentTime(),
+          status,
+          settingsData.nama_sekolah,
+          settingsData.whatsapp_token,
+          {
+            notifMasuk: settingsData.notif_masuk,
+            notifPulang: settingsData.notif_pulang,
+            notifTerlambat: settingsData.notif_terlambat,
+          },
+        );
+      }
+
+      await fetchTodayAbsensi();
+    }
+    setManualLoading(false);
   };
 
   const handleScanSuccess = async (decodedText: string) => {
@@ -378,11 +497,36 @@ export function ScanAbsensi() {
     }
   };
 
+  // Cek apakah siswa sudah absen hari ini
+  const isSudahAbsen = (siswaId: string) =>
+    todayRecords.some((r) => r.studentId === siswaId);
+
   const totalHadir = todayRecords.filter((r) => r.status === "hadir").length;
   const totalTerlambat = todayRecords.filter(
     (r) => r.status === "terlambat",
   ).length;
+  const totalIzin = todayRecords.filter((r) => r.status === "izin").length;
+  const totalSakit = todayRecords.filter((r) => r.status === "sakit").length;
+  const totalAlfa = todayRecords.filter((r) => r.status === "alfa").length;
   const totalPulang = todayRecords.filter((r) => r.jamPulang).length;
+
+  const statusColor: Record<string, string> = {
+    hadir: "bg-primary/10 text-primary",
+    terlambat: "bg-amber-100 text-amber-700",
+    izin: "bg-blue-100 text-blue-700",
+    sakit: "bg-green-100 text-green-700",
+    alfa: "bg-destructive/10 text-destructive",
+    pulang: "bg-secondary/10 text-secondary",
+  };
+
+  const statusLabel: Record<string, string> = {
+    hadir: "Tepat Waktu",
+    terlambat: "Terlambat",
+    izin: "Izin",
+    sakit: "Sakit",
+    alfa: "Alfa",
+    pulang: "Pulang",
+  };
 
   return (
     <div className="p-6 space-y-6">
@@ -395,78 +539,216 @@ export function ScanAbsensi() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle>Mode Absensi</CardTitle>
-                <div className="flex gap-2">
-                  <Button
-                    variant={mode === "masuk" ? "default" : "outline"}
-                    onClick={() => {
-                      setMode("masuk");
-                      setErrorMessage("");
-                    }}
-                  >
-                    Absen Masuk
-                  </Button>
-                  <Button
-                    variant={mode === "pulang" ? "default" : "outline"}
-                    onClick={() => {
-                      setMode("pulang");
-                      setErrorMessage("");
-                    }}
-                  >
-                    Absen Pulang
-                  </Button>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {!scanning && (
-                <div className="w-full h-[400px] rounded-lg bg-muted flex items-center justify-center">
-                  <div className="text-center">
-                    <Camera className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-                    <p className="text-muted-foreground">Kamera belum aktif</p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Mode: {mode === "masuk" ? "Absen Masuk" : "Absen Pulang"}
-                    </p>
+          {/* Tab Scan QR / Input Manual */}
+          <div className="flex gap-2">
+            <button
+              onClick={() => setShowManual(false)}
+              className={cn(
+                "flex-1 py-2.5 rounded-lg text-sm font-medium border transition-colors",
+                !showManual
+                  ? "bg-primary text-primary-foreground border-primary"
+                  : "border-input hover:bg-muted",
+              )}
+            >
+              📷 Scan QR Code
+            </button>
+            <button
+              onClick={() => setShowManual(true)}
+              className={cn(
+                "flex-1 py-2.5 rounded-lg text-sm font-medium border transition-colors",
+                showManual
+                  ? "bg-primary text-primary-foreground border-primary"
+                  : "border-input hover:bg-muted",
+              )}
+            >
+              <UserX className="w-4 h-4 inline mr-1" />
+              Input Manual (Izin/Sakit/Alfa)
+            </button>
+          </div>
+
+          {/* Panel Scan QR */}
+          {!showManual && (
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle>Mode Absensi</CardTitle>
+                  <div className="flex gap-2">
+                    <Button
+                      variant={mode === "masuk" ? "default" : "outline"}
+                      onClick={() => {
+                        setMode("masuk");
+                        setErrorMessage("");
+                      }}
+                    >
+                      Absen Masuk
+                    </Button>
+                    <Button
+                      variant={mode === "pulang" ? "default" : "outline"}
+                      onClick={() => {
+                        setMode("pulang");
+                        setErrorMessage("");
+                      }}
+                    >
+                      Absen Pulang
+                    </Button>
                   </div>
                 </div>
-              )}
-
-              <div
-                id="qr-reader"
-                ref={qrReaderRef}
-                className="w-full rounded-lg overflow-hidden"
-              />
-
-              <div className="flex gap-2">
-                {!scanning ? (
-                  <Button className="w-full" onClick={startScanning}>
-                    <Camera className="w-4 h-4" />
-                    Mulai Scan
-                  </Button>
-                ) : (
-                  <Button
-                    className="w-full"
-                    variant="destructive"
-                    onClick={stopScanning}
-                  >
-                    <CameraOff className="w-4 h-4" />
-                    Stop Scan
-                  </Button>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {!scanning && (
+                  <div className="w-full h-[400px] rounded-lg bg-muted flex items-center justify-center">
+                    <div className="text-center">
+                      <Camera className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+                      <p className="text-muted-foreground">
+                        Kamera belum aktif
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Mode:{" "}
+                        {mode === "masuk" ? "Absen Masuk" : "Absen Pulang"}
+                      </p>
+                    </div>
+                  </div>
                 )}
-              </div>
 
-              {errorMessage && (
-                <div className="bg-destructive/10 text-destructive p-4 rounded-lg text-sm font-medium">
-                  ⚠️ {errorMessage}
+                <div
+                  id="qr-reader"
+                  ref={qrReaderRef}
+                  className="w-full rounded-lg overflow-hidden"
+                />
+
+                <div className="flex gap-2">
+                  {!scanning ? (
+                    <Button className="w-full" onClick={startScanning}>
+                      <Camera className="w-4 h-4" />
+                      Mulai Scan
+                    </Button>
+                  ) : (
+                    <Button
+                      className="w-full"
+                      variant="destructive"
+                      onClick={stopScanning}
+                    >
+                      <CameraOff className="w-4 h-4" />
+                      Stop Scan
+                    </Button>
+                  )}
                 </div>
-              )}
-            </CardContent>
-          </Card>
 
-          {showSuccess && lastScan && (
+                {errorMessage && (
+                  <div className="bg-destructive/10 text-destructive p-4 rounded-lg text-sm font-medium">
+                    ⚠️ {errorMessage}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Panel Input Manual */}
+          {showManual && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Input Manual Ketidakhadiran</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* Search siswa */}
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Cari nama, NISN, atau kelas..."
+                    className="pl-10"
+                    value={manualSearch}
+                    onChange={(e) => setManualSearch(e.target.value)}
+                  />
+                </div>
+
+                {/* Daftar siswa */}
+                <div className="space-y-2 max-h-[500px] overflow-y-auto">
+                  {filteredSiswa.length === 0 && (
+                    <p className="text-center text-muted-foreground py-8">
+                      Tidak ada siswa ditemukan
+                    </p>
+                  )}
+                  {filteredSiswa.map((siswa) => {
+                    const sudahAbsen = isSudahAbsen(siswa.id);
+                    const recordSiswa = todayRecords.find(
+                      (r) => r.studentId === siswa.id,
+                    );
+
+                    return (
+                      <div
+                        key={siswa.id}
+                        className={cn(
+                          "flex items-center justify-between p-3 rounded-lg border",
+                          sudahAbsen
+                            ? "bg-muted/50 opacity-70"
+                            : "bg-background",
+                        )}
+                      >
+                        <div className="flex items-center gap-3">
+                          {/* Avatar */}
+                          <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-sm font-medium text-primary flex-shrink-0">
+                            {siswa.nama.charAt(0).toUpperCase()}
+                          </div>
+                          <div>
+                            <p className="font-medium text-sm">{siswa.nama}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {siswa.nisn} • {siswa.kelas}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          {sudahAbsen ? (
+                            <span
+                              className={cn(
+                                "px-2.5 py-1 rounded-full text-xs font-medium",
+                                statusColor[recordSiswa?.status || "hadir"],
+                              )}
+                            >
+                              {statusLabel[recordSiswa?.status || "hadir"]}
+                            </span>
+                          ) : (
+                            <>
+                              <button
+                                onClick={() =>
+                                  handleManualAbsensi(siswa, "izin")
+                                }
+                                disabled={manualLoading}
+                                className="px-2.5 py-1 rounded-md bg-blue-100 text-blue-700 text-xs font-medium hover:bg-blue-200 transition-colors"
+                              >
+                                Izin
+                              </button>
+                              <button
+                                onClick={() =>
+                                  handleManualAbsensi(siswa, "sakit")
+                                }
+                                disabled={manualLoading}
+                                className="px-2.5 py-1 rounded-md bg-green-100 text-green-700 text-xs font-medium hover:bg-green-200 transition-colors"
+                              >
+                                Sakit
+                              </button>
+                              <button
+                                onClick={() =>
+                                  handleManualAbsensi(siswa, "alfa")
+                                }
+                                disabled={manualLoading}
+                                className="px-2.5 py-1 rounded-md bg-destructive/10 text-destructive text-xs font-medium hover:bg-destructive/20 transition-colors"
+                              >
+                                Alfa
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Card sukses scan */}
+          {showSuccess && lastScan && !showManual && (
             <Card className="border-primary bg-primary/5">
               <CardContent className="p-6">
                 <div className="flex items-start gap-4">
@@ -531,29 +813,56 @@ export function ScanAbsensi() {
           )}
         </div>
 
-        {/* Sidebar */}
+        {/* Sidebar statistik */}
         <div className="space-y-6">
           <Card>
             <CardHeader>
               <CardTitle>Statistik Hari Ini</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex items-center justify-between p-3 bg-primary/10 rounded-lg">
-                <span className="text-sm font-medium">Total Hadir</span>
-                <span className="font-bold text-lg text-primary">
-                  {totalHadir}
-                </span>
-              </div>
-              <div className="flex items-center justify-between p-3 bg-amber-100 rounded-lg">
-                <span className="text-sm font-medium">Terlambat</span>
-                <span className="font-bold text-lg text-amber-700">
-                  {totalTerlambat}
-                </span>
-              </div>
-              <div className="flex items-center justify-between p-3 bg-secondary/10 rounded-lg">
-                <span className="text-sm font-medium">Sudah Pulang</span>
-                <span className="font-bold text-lg">{totalPulang}</span>
-              </div>
+            <CardContent className="space-y-2">
+              {[
+                {
+                  label: "Hadir",
+                  value: totalHadir,
+                  color: "bg-primary/10 text-primary",
+                },
+                {
+                  label: "Terlambat",
+                  value: totalTerlambat,
+                  color: "bg-amber-100 text-amber-700",
+                },
+                {
+                  label: "Izin",
+                  value: totalIzin,
+                  color: "bg-blue-100 text-blue-700",
+                },
+                {
+                  label: "Sakit",
+                  value: totalSakit,
+                  color: "bg-green-100 text-green-700",
+                },
+                {
+                  label: "Alfa",
+                  value: totalAlfa,
+                  color: "bg-destructive/10 text-destructive",
+                },
+                {
+                  label: "Sudah Pulang",
+                  value: totalPulang,
+                  color: "bg-secondary/10 text-secondary",
+                },
+              ].map((stat) => (
+                <div
+                  key={stat.label}
+                  className={cn(
+                    "flex items-center justify-between p-3 rounded-lg",
+                    stat.color,
+                  )}
+                >
+                  <span className="text-sm font-medium">{stat.label}</span>
+                  <span className="font-bold text-lg">{stat.value}</span>
+                </div>
+              ))}
             </CardContent>
           </Card>
 
@@ -567,7 +876,11 @@ export function ScanAbsensi() {
                 <div>
                   <p className="font-medium">Mode Saat Ini</p>
                   <p className="text-muted-foreground">
-                    {mode === "masuk" ? "🟢 Absen Masuk" : "🔵 Absen Pulang"}
+                    {showManual
+                      ? "📝 Input Manual"
+                      : mode === "masuk"
+                        ? "🟢 Absen Masuk"
+                        : "🔵 Absen Pulang"}
                   </p>
                 </div>
               </div>
@@ -576,11 +889,7 @@ export function ScanAbsensi() {
                 <div>
                   <p className="font-medium">Jam Sekarang</p>
                   <p className="text-muted-foreground">
-                    {new Date().toLocaleTimeString("id-ID", {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}{" "}
-                    WIB
+                    {getCurrentTime()} WIB
                   </p>
                 </div>
               </div>
@@ -633,18 +942,10 @@ export function ScanAbsensi() {
                       <span
                         className={cn(
                           "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium",
-                          record.status === "hadir"
-                            ? "bg-primary/10 text-primary"
-                            : record.status === "terlambat"
-                              ? "bg-amber-100 text-amber-700"
-                              : "bg-secondary/10 text-secondary",
+                          statusColor[record.status],
                         )}
                       >
-                        {record.status === "hadir"
-                          ? "Tepat Waktu"
-                          : record.status === "terlambat"
-                            ? "Terlambat"
-                            : "Pulang"}
+                        {statusLabel[record.status]}
                       </span>
                     </td>
                   </tr>
