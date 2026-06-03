@@ -8,22 +8,64 @@ import {
   Scan,
 } from "lucide-react";
 import { cn } from "./ui/utils";
+import { useAuth } from "../../lib/AuthContext";
 
 interface SidebarProps {
   currentPage: string;
   onNavigate: (page: string) => void;
 }
 
+const allMenuItems = [
+  {
+    id: "dashboard",
+    label: "Dashboard",
+    icon: Home,
+    roles: ["super_admin", "operator", "guru"],
+  },
+  {
+    id: "siswa",
+    label: "Data Siswa",
+    icon: Users,
+    roles: ["super_admin", "operator", "guru"],
+  },
+  {
+    id: "kelas",
+    label: "Manajemen Kelas",
+    icon: BarChart3,
+    roles: ["super_admin", "operator"],
+  },
+  {
+    id: "qr",
+    label: "Generate QR",
+    icon: QrCode,
+    roles: ["super_admin", "operator"],
+  },
+  {
+    id: "scan",
+    label: "Scan Absensi",
+    icon: Scan,
+    roles: ["super_admin", "operator"],
+  },
+  {
+    id: "rekap",
+    label: "Rekap Absensi",
+    icon: FileText,
+    roles: ["super_admin", "operator", "guru"],
+  },
+  {
+    id: "pengaturan",
+    label: "Pengaturan",
+    icon: Settings,
+    roles: ["super_admin"],
+  },
+];
+
 export function Sidebar({ currentPage, onNavigate }: SidebarProps) {
-  const menuItems = [
-    { id: "dashboard", label: "Dashboard", icon: Home },
-    { id: "siswa", label: "Data Siswa", icon: Users },
-    { id: "kelas", label: "Manajemen Kelas", icon: BarChart3 },
-    { id: "qr", label: "Generate QR", icon: QrCode },
-    { id: "scan", label: "Scan Absensi", icon: Scan },
-    { id: "rekap", label: "Rekap Absensi", icon: FileText },
-    { id: "pengaturan", label: "Pengaturan", icon: Settings },
-  ];
+  const { user } = useAuth();
+
+  const menuItems = allMenuItems.filter(
+    (item) => user?.role && item.roles.includes(user.role),
+  );
 
   return (
     <div className="w-64 h-screen bg-white border-r border-border flex flex-col">

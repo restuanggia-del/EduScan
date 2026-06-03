@@ -28,6 +28,37 @@ export default function App() {
   if (!user) return <Login />;
 
   const renderPage = () => {
+    const role = user?.role;
+
+    const restricted: Record<string, string[]> = {
+      kelas: ["super_admin", "operator"],
+      qr: ["super_admin", "operator"],
+      scan: ["super_admin", "operator"],
+      pengaturan: ["super_admin"],
+    };
+
+    if (
+      restricted[currentPage] &&
+      role &&
+      !restricted[currentPage].includes(role)
+    ) {
+      return (
+        <div className="flex flex-col items-center justify-center h-full gap-4">
+          <div className="text-6xl">🚫</div>
+          <h2 className="text-2xl font-bold">Akses Ditolak</h2>
+          <p className="text-muted-foreground text-center">
+            Kamu tidak memiliki izin untuk mengakses halaman ini.
+          </p>
+          <button
+            onClick={() => setCurrentPage("dashboard")}
+            className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm"
+          >
+            Kembali ke Dashboard
+          </button>
+        </div>
+      );
+    }
+
     switch (currentPage) {
       case "dashboard":
         return <Dashboard />;
