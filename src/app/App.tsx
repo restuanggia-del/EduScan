@@ -82,10 +82,8 @@ export default function App() {
   return (
     <div className="size-full flex bg-background">
       <Sidebar currentPage={currentPage} onNavigate={setCurrentPage} />
-
       <div className="flex-1 flex flex-col overflow-hidden">
-        <Header onSearch={setSearchQuery} />
-
+        <Header onSearch={setSearchQuery} onNavigate={setCurrentPage} />
         <main className="flex-1 overflow-y-auto">{renderPage()}</main>
       </div>
       <Toaster richColors position="top-right" />

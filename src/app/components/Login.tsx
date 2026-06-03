@@ -76,7 +76,6 @@ export function Login() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/10 to-secondary/10 flex items-center justify-center p-4">
       <div className="w-full max-w-md space-y-6">
-        {/* Logo */}
         <div className="text-center">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-primary rounded-2xl mb-4">
             <School className="w-8 h-8 text-white" />
@@ -99,7 +98,6 @@ export function Login() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {/* Field Nama (hanya register) */}
             {mode === "register" && (
               <div className="space-y-2">
                 <Label htmlFor="nama">Nama Lengkap</Label>
@@ -114,7 +112,6 @@ export function Login() {
               </div>
             )}
 
-            {/* Email */}
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input
@@ -128,7 +125,6 @@ export function Login() {
               />
             </div>
 
-            {/* Password */}
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
               <div className="relative">
@@ -158,7 +154,6 @@ export function Login() {
               </div>
             </div>
 
-            {/* Role (hanya register) */}
             {mode === "register" && (
               <div className="space-y-2">
                 <Label>Role</Label>
@@ -182,7 +177,6 @@ export function Login() {
               </div>
             )}
 
-            {/* Tombol aksi */}
             <button
               onClick={mode === "login" ? handleLogin : handleRegister}
               disabled={loading}
@@ -191,7 +185,6 @@ export function Login() {
               {loading ? "Memproses..." : mode === "login" ? "Masuk" : "Daftar"}
             </button>
 
-            {/* Switch mode */}
             <p className="text-center text-sm text-muted-foreground">
               {mode === "login" ? "Belum punya akun?" : "Sudah punya akun?"}{" "}
               <button

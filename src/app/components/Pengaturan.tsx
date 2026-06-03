@@ -25,13 +25,25 @@ export function Pengaturan() {
     notifMasuk: true,
     notifPulang: true,
     notifTerlambat: true,
+
+    templateMasuk:
+      "Ananda [nama] telah hadir di sekolah pada pukul [jam] WIB.\n\nSMA Negeri 1",
+    templateTerlambat:
+      "Ananda [nama] terlambat masuk sekolah.\n\nJam Masuk:\n[jam] WIB\n\nSMA Negeri 1",
+    templatePulang:
+      "Ananda [nama] telah meninggalkan sekolah pada pukul [jam] WIB.\n\nSMA Negeri 1",
+    templateIzin:
+      "Ananda [nama] tidak hadir hari ini dengan keterangan Izin.\n\nSMA Negeri 1",
+    templateSakit:
+      "Ananda [nama] tidak hadir hari ini dengan keterangan Sakit.\n\nSMA Negeri 1",
+    templateAlfa:
+      "Ananda [nama] tidak hadir hari ini tanpa keterangan (Alfa).\n\nSMA Negeri 1",
   });
 
   const [testNumber, setTestNumber] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // ✅ Fetch settings dari Supabase
   useEffect(() => {
     fetchSettings();
   }, []);
@@ -56,12 +68,18 @@ export function Pengaturan() {
         notifMasuk: data.notif_masuk,
         notifPulang: data.notif_pulang,
         notifTerlambat: data.notif_terlambat,
+
+        templateMasuk: data.template_masuk || "",
+        templateTerlambat: data.template_terlambat || "",
+        templatePulang: data.template_pulang || "",
+        templateIzin: data.template_izin || "",
+        templateSakit: data.template_sakit || "",
+        templateAlfa: data.template_alfa || "",
       });
     }
     setLoading(false);
   };
 
-  // ✅ Simpan settings ke Supabase
   const handleSave = async () => {
     setIsSaving(true);
     const { error } = await supabase
@@ -179,7 +197,6 @@ export function Pengaturan() {
           </Card>
         </TabsContent>
 
-        {/* Tab Absensi */}
         <TabsContent value="absensi" className="space-y-6">
           <Card>
             <CardHeader>
@@ -267,7 +284,6 @@ export function Pengaturan() {
           </Card>
         </TabsContent>
 
-        {/* Tab WhatsApp */}
         <TabsContent value="whatsapp" className="space-y-6">
           <Card>
             <CardHeader>
@@ -391,29 +407,49 @@ export function Pengaturan() {
           <Card>
             <CardHeader>
               <CardTitle>Template Notifikasi</CardTitle>
-              <CardDescription>Preview template pesan WhatsApp</CardDescription>
+              <CardDescription>
+                Edit template pesan WhatsApp yang akan dikirim ke orang tua.
+                Gunakan{" "}
+                <code className="bg-muted px-1 rounded text-xs">[nama]</code>{" "}
+                untuk nama siswa dan{" "}
+                <code className="bg-muted px-1 rounded text-xs">[jam]</code>{" "}
+                untuk jam absensi.
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               {[
-                {
-                  label: "Template Masuk Tepat Waktu",
-                  msg: `Siswa [Nama Siswa] telah hadir di sekolah pada pukul [Jam] WIB.\n\n${settings.namaSekolah}`,
-                },
-                {
-                  label: "Template Terlambat",
-                  msg: `Siswa [Nama Siswa] terlambat masuk sekolah.\n\nJam Masuk:\n[Jam] WIB\n\n${settings.namaSekolah}`,
-                },
-                {
-                  label: "Template Pulang",
-                  msg: `Siswa [Nama Siswa] telah meninggalkan sekolah pada pukul [Jam] WIB.\n\n${settings.namaSekolah}`,
-                },
+                { key: "templateMasuk", label: "Template Masuk Tepat Waktu" },
+                { key: "templateTerlambat", label: "Template Terlambat" },
+                { key: "templatePulang", label: "Template Pulang" },
+                { key: "templateIzin", label: "Template Izin" },
+                { key: "templateSakit", label: "Template Sakit" },
+                { key: "templateAlfa", label: "Template Alfa" },
               ].map((t) => (
-                <div key={t.label} className="p-4 bg-muted rounded-lg">
-                  <p className="text-xs text-muted-foreground mb-2">
+                <div key={t.key} className="p-4 bg-muted rounded-lg space-y-2">
+                  <p className="text-xs font-medium text-muted-foreground">
                     {t.label}
                   </p>
-                  <div className="bg-white p-3 rounded border">
-                    <p className="text-sm whitespace-pre-line">{t.msg}</p>
+                  <textarea
+                    className="w-full min-h-[80px] px-3 py-2 text-sm rounded-md border border-input bg-white resize-y focus:outline-none focus:ring-2 focus:ring-primary/50"
+                    value={
+                      (settings[t.key as keyof typeof settings] as string) || ""
+                    }
+                    onChange={(e) =>
+                      setSettings({ ...settings, [t.key]: e.target.value })
+                    }
+                  />
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                    <p className="text-xs text-green-700 font-medium mb-1">
+                      Preview:
+                    </p>
+                    <p className="text-sm whitespace-pre-line text-green-900">
+                      {(
+                        (settings[t.key as keyof typeof settings] as string) ||
+                        ""
+                      )
+                        .replace("[nama]", "Ahmad Fauzi")
+                        .replace("[jam]", "07:25")}
+                    </p>
                   </div>
                 </div>
               ))}
