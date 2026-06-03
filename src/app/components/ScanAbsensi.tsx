@@ -188,31 +188,45 @@ export function ScanAbsensi() {
       notifPulang: boolean;
       notifTerlambat: boolean;
     },
+    templates: {
+      templateMasuk: string;
+      templateTerlambat: string;
+      templatePulang: string;
+      templateIzin: string;
+      templateSakit: string;
+      templateAlfa: string;
+    },
   ) => {
     if (!token) return;
-
-    let nomor = noWA.replace(/\s+/g, "");
-    if (nomor.startsWith("0")) nomor = "62" + nomor.slice(1);
-    else if (nomor.startsWith("+")) nomor = nomor.slice(1);
-
-    const messages: Record<string, string> = {
-      masuk: `Ananda ${nama} telah hadir di sekolah pada pukul ${jam} WIB.\n\n${namaSekolah}`,
-      terlambat: `Ananda ${nama} terlambat masuk sekolah.\n\nJam Masuk:\n${jam} WIB\n\n${namaSekolah}`,
-      pulang: `Ananda ${nama} telah meninggalkan sekolah pada pukul ${jam} WIB.\n\n${namaSekolah}`,
-      izin: `Ananda ${nama} tidak hadir hari ini dengan keterangan *Izin*.\n\n${namaSekolah}`,
-      sakit: `Ananda ${nama} tidak hadir hari ini dengan keterangan *Sakit*.\n\n${namaSekolah}`,
-      alfa: `Ananda ${nama} tidak hadir hari ini tanpa keterangan (*Alfa*).\n\n${namaSekolah}`,
-    };
 
     if (type === "masuk" && !notifSettings.notifMasuk) return;
     if (type === "pulang" && !notifSettings.notifPulang) return;
     if (type === "terlambat" && !notifSettings.notifTerlambat) return;
 
+    let nomor = noWA.replace(/\s+/g, "");
+    if (nomor.startsWith("0")) nomor = "62" + nomor.slice(1);
+    else if (nomor.startsWith("+")) nomor = nomor.slice(1);
+
+    const templateMap: Record<string, string> = {
+      masuk: templates.templateMasuk,
+      terlambat: templates.templateTerlambat,
+      pulang: templates.templatePulang,
+      izin: templates.templateIzin,
+      sakit: templates.templateSakit,
+      alfa: templates.templateAlfa,
+    };
+
+    const message = (templateMap[type] || "")
+      .replace(/\[nama\]/gi, nama)
+      .replace(/\[jam\]/gi, jam);
+
+    if (!message.trim()) return;
+
     try {
       await fetch("https://api.fonnte.com/send", {
         method: "POST",
         headers: { Authorization: token, "Content-Type": "application/json" },
-        body: JSON.stringify({ target: nomor, message: messages[type] }),
+        body: JSON.stringify({ target: nomor, message }),
       });
     } catch (err) {
       console.error("Gagal kirim WA:", err);
@@ -259,6 +273,21 @@ export function ScanAbsensi() {
         .single();
 
       if (settingsData?.whatsapp_enabled && siswa.no_wa) {
+        const templates = {
+          templateMasuk: settingsData?.template_masuk || "",
+          templateTerlambat: settingsData?.template_terlambat || "",
+          templatePulang: settingsData?.template_pulang || "",
+          templateIzin:
+            settingsData?.template_izin ||
+            "Siswa [nama] tidak hadir hari ini dengan keterangan Izin.",
+          templateSakit:
+            settingsData?.template_sakit ||
+            "Siswa [nama] tidak hadir hari ini dengan keterangan Sakit.",
+          templateAlfa:
+            settingsData?.template_alfa ||
+            "Siswa [nama] tidak hadir hari ini tanpa keterangan (Alfa).",
+        };
+
         await sendWhatsAppNotification(
           siswa.no_wa,
           siswa.nama,
@@ -271,6 +300,7 @@ export function ScanAbsensi() {
             notifPulang: settingsData.notif_pulang,
             notifTerlambat: settingsData.notif_terlambat,
           },
+          templates,
         );
       }
 
@@ -301,6 +331,27 @@ export function ScanAbsensi() {
         notifMasuk: settingsData?.notif_masuk ?? true,
         notifPulang: settingsData?.notif_pulang ?? true,
         notifTerlambat: settingsData?.notif_terlambat ?? true,
+      };
+
+      const templates = {
+        templateMasuk:
+          settingsData?.template_masuk ||
+          "Siswa [nama] telah hadir di sekolah pada pukul [jam] WIB.",
+        templateTerlambat:
+          settingsData?.template_terlambat ||
+          "Siswa [nama] terlambat masuk sekolah. Jam Masuk: [jam] WIB.",
+        templatePulang:
+          settingsData?.template_pulang ||
+          "Siswa [nama] telah meninggalkan sekolah pada pukul [jam] WIB.",
+        templateIzin:
+          settingsData?.template_izin ||
+          "Siswa [nama] tidak hadir hari ini dengan keterangan Izin.",
+        templateSakit:
+          settingsData?.template_sakit ||
+          "Siswa [nama] tidak hadir hari ini dengan keterangan Sakit.",
+        templateAlfa:
+          settingsData?.template_alfa ||
+          "Siswa [nama] tidak hadir hari ini tanpa keterangan (Alfa).",
       };
 
       const { data: siswa, error: siswaError } = await supabase
@@ -383,6 +434,7 @@ export function ScanAbsensi() {
             namaSekolah,
             whatsappToken,
             notifSettings,
+            templates,
           );
         }
 
@@ -443,6 +495,7 @@ export function ScanAbsensi() {
             namaSekolah,
             whatsappToken,
             notifSettings,
+            templates,
           );
         }
 

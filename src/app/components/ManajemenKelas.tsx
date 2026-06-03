@@ -204,7 +204,7 @@ export function ManajemenKelas() {
                 onChange={(e) =>
                   setFormData({ ...formData, namaKelas: e.target.value })
                 }
-                placeholder="Contoh: XII IPA 1"
+                placeholder="Contoh: X IPA"
               />
             </div>
 
