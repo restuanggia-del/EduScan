@@ -14,6 +14,7 @@ import {
 import { Label } from "./ui/label";
 import { supabase } from "../../lib/supabaseClient";
 import { toast } from "sonner";
+import { useAuth } from "../../lib/AuthContext";
 
 interface Student {
   id: string;
@@ -31,6 +32,8 @@ export function DataSiswa({
 }: {
   searchQuery?: string;
 }) {
+  const { user } = useAuth();
+  const isGuru = user?.role === "guru";
   const [localSearch, setLocalSearch] = useState("");
   const [students, setStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(true);
@@ -211,13 +214,15 @@ export function DataSiswa({
           </p>
         </div>
 
-        <button
-          onClick={() => setIsAddDialogOpen(true)}
-          className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm font-medium hover:bg-primary/90 cursor-pointer"
-        >
-          <Plus className="w-4 h-4" />
-          Tambah Siswa
-        </button>
+        {!isGuru && (
+          <button
+            onClick={() => setIsAddDialogOpen(true)}
+            className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm font-medium hover:bg-primary/90 cursor-pointer"
+          >
+            <Plus className="w-4 h-4" />
+            Tambah Siswa
+          </button>
+        )}
         <Dialog
           open={isAddDialogOpen || editingStudent !== null}
           onOpenChange={closeDialog}
@@ -425,7 +430,7 @@ export function DataSiswa({
                       No. WhatsApp
                     </th>
                     <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">
-                      Aksi
+                      {isGuru ? "" : "Aksi"}
                     </th>
                   </tr>
                 </thead>
@@ -460,22 +465,28 @@ export function DataSiswa({
                         {student.noWA}
                       </td>
                       <td className="py-3 px-4">
-                        <div className="flex items-center gap-2">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => openEditDialog(student)}
-                            className="cursor-pointer"
-                          >
-                            <Edit className="w-4 h-4" />
-                          </Button>
-                          <button
-                            onClick={() => setDeletingId(student.id)}
-                            className="p-2 rounded-md hover:bg-muted cursor-pointer"
-                          >
-                            <Trash2 className="w-4 h-4 text-destructive" />
-                          </button>
-                        </div>
+                        {isGuru ? (
+                          <span className="text-xs text-muted-foreground px-2">
+                            Hanya lihat
+                          </span>
+                        ) : (
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => openEditDialog(student)}
+                              className="cursor-pointer"
+                            >
+                              <Edit className="w-4 h-4" />
+                            </Button>
+                            <button
+                              onClick={() => setDeletingId(student.id)}
+                              className="p-2 rounded-md hover:bg-muted cursor-pointer"
+                            >
+                              <Trash2 className="w-4 h-4 text-destructive" />
+                            </button>
+                          </div>
+                        )}
                       </td>
                     </tr>
                   ))}
