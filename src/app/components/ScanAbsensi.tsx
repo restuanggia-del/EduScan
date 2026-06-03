@@ -210,7 +210,6 @@ export function ScanAbsensi() {
     try {
       const data = JSON.parse(decodedText);
 
-      // Ambil data siswa dari Supabase
       const { data: siswa, error: siswaError } = await supabase
         .from("siswa")
         .select("id, nama, nisn, kelas, foto_url, no_wa")

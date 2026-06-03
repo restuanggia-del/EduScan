@@ -9,9 +9,22 @@ import { ScanAbsensi } from "./components/ScanAbsensi";
 import { Pengaturan } from "./components/Pengaturan";
 import { Toaster } from "sonner";
 import { RekapAbsensi } from "./components/RekapAbsensi";
+import { useAuth } from "../lib/AuthContext";
+import { Login } from "./components/Login";
 
 export default function App() {
+  const { user, loading } = useAuth();
   const [currentPage, setCurrentPage] = useState("dashboard");
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-muted-foreground">Memuat...</p>
+      </div>
+    );
+  }
+
+  if (!user) return <Login />;
 
   const renderPage = () => {
     switch (currentPage) {
