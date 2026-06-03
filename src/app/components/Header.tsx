@@ -75,7 +75,7 @@ export function Header({ onSearch }: { onSearch?: (q: string) => void }) {
         <div className="relative" ref={dropdownRef}>
           <button
             onClick={() => setDropdownOpen(!dropdownOpen)}
-            className="flex items-center gap-3 pl-3 border-l border-border hover:bg-muted/50 rounded-md px-2 py-1.5 transition-colors"
+            className="flex items-center gap-3 pl-3 border-l border-border hover:bg-muted/50 rounded-md px-2 py-1.5 transition-colors cursor-pointer"
           >
             <div className="text-right">
               <div className="text-sm font-medium">{user?.nama || "User"}</div>
@@ -107,7 +107,7 @@ export function Header({ onSearch }: { onSearch?: (q: string) => void }) {
               <div className="p-1">
                 <button
                   onClick={handleSignOut}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-destructive hover:bg-destructive/10 rounded-md transition-colors"
+                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-destructive hover:bg-destructive/10 rounded-md transition-colors cursor-pointer"
                 >
                   <LogOut className="w-4 h-4" />
                   Keluar

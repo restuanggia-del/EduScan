@@ -224,18 +224,21 @@ export function RekapAbsensi() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={handleExportExcel}>
+          <Button
+            variant="outline"
+            onClick={handleExportExcel}
+            className="cursor-pointer"
+          >
             <Download className="w-4 h-4" />
             Export Excel
           </Button>
-          <Button onClick={handleExportPDF}>
+          <Button onClick={handleExportPDF} className="cursor-pointer">
             <FileText className="w-4 h-4" />
             Export PDF
           </Button>
         </div>
       </div>
 
-      {/* Filter */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -245,7 +248,6 @@ export function RekapAbsensi() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {/* Filter Periode */}
             <div className="space-y-2">
               <Label>Periode</Label>
               <div className="flex gap-2 flex-wrap">
@@ -256,7 +258,7 @@ export function RekapAbsensi() {
                     key={f}
                     onClick={() => setFilterType(f)}
                     className={cn(
-                      "px-3 py-1.5 rounded-md text-sm font-medium border transition-colors",
+                      "px-3 py-1.5 rounded-md text-sm font-medium border transition-colors cursor-pointer",
                       filterType === f
                         ? "bg-primary text-primary-foreground border-primary"
                         : "border-input hover:bg-muted",
@@ -268,7 +270,6 @@ export function RekapAbsensi() {
               </div>
             </div>
 
-            {/* Pilih Tanggal */}
             <div className="space-y-2">
               <Label>Tanggal Acuan</Label>
               <Input
@@ -281,7 +282,6 @@ export function RekapAbsensi() {
               </p>
             </div>
 
-            {/* Filter Kelas */}
             <div className="space-y-2">
               <Label>Kelas</Label>
               <select
@@ -301,7 +301,6 @@ export function RekapAbsensi() {
         </CardContent>
       </Card>
 
-      {/* Statistik Ringkasan */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         {[
           {
@@ -341,7 +340,6 @@ export function RekapAbsensi() {
         ))}
       </div>
 
-      {/* Tabel Rekap */}
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">

@@ -87,7 +87,6 @@ export function Pengaturan() {
     setIsSaving(false);
   };
 
-  // ✅ Test kirim WhatsApp via Fonnte
   const handleTestWhatsApp = async () => {
     if (!testNumber) {
       toast.error("Masukkan nomor WhatsApp terlebih dahulu");
@@ -141,15 +140,15 @@ export function Pengaturan() {
 
       <Tabs defaultValue="umum" className="space-y-6">
         <TabsList>
-          <TabsTrigger value="umum">
+          <TabsTrigger value="umum" className="cursor-pointer">
             <School className="w-4 h-4 mr-2" />
             Umum
           </TabsTrigger>
-          <TabsTrigger value="absensi">
+          <TabsTrigger value="absensi" className="cursor-pointer">
             <Clock className="w-4 h-4 mr-2" />
             Absensi
           </TabsTrigger>
-          <TabsTrigger value="whatsapp">
+          <TabsTrigger value="whatsapp" className="cursor-pointer">
             <MessageSquare className="w-4 h-4 mr-2" />
             WhatsApp
           </TabsTrigger>
@@ -328,7 +327,11 @@ export function Pengaturan() {
                     value={testNumber}
                     onChange={(e) => setTestNumber(e.target.value)}
                   />
-                  <Button onClick={handleTestWhatsApp} variant="outline">
+                  <Button
+                    onClick={handleTestWhatsApp}
+                    variant="outline"
+                    className="cursor-pointer"
+                  >
                     <Send className="w-4 h-4" />
                     Kirim Test
                   </Button>
@@ -420,7 +423,11 @@ export function Pengaturan() {
       </Tabs>
 
       <div className="flex justify-end">
-        <Button onClick={handleSave} disabled={isSaving}>
+        <Button
+          onClick={handleSave}
+          disabled={isSaving}
+          className="cursor-pointer"
+        >
           <Save className="w-4 h-4" />
           {isSaving ? "Menyimpan..." : "Simpan Pengaturan"}
         </Button>

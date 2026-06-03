@@ -173,7 +173,7 @@ export function GenerateQR() {
               </select>
             </div>
             <Button
-              className="w-full"
+              className="w-full cursor-pointer"
               onClick={handleGenerateByKelas}
               disabled={!selectedKelas}
             >
@@ -192,7 +192,7 @@ export function GenerateQR() {
               Generate kartu untuk seluruh siswa ({allStudents.length} siswa)
             </p>
             <Button
-              className="w-full"
+              className="w-full cursor-pointer"
               onClick={handleGenerateAll}
               disabled={loading}
             >
@@ -294,6 +294,7 @@ export function GenerateQR() {
                           variant="outline"
                           size="sm"
                           onClick={() => handleGenerateSingle(student)}
+                          className="cursor-pointer"
                         >
                           <Printer className="w-4 h-4" />
                           Generate

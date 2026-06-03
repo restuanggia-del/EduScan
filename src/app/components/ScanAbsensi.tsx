@@ -46,7 +46,6 @@ export function ScanAbsensi() {
   const [todayRecords, setTodayRecords] = useState<AbsensiRecord[]>([]);
   const [errorMessage, setErrorMessage] = useState("");
 
-  // State untuk input manual
   const [showManual, setShowManual] = useState(false);
   const [manualSearch, setManualSearch] = useState("");
   const [allSiswa, setAllSiswa] = useState<Siswa[]>([]);
@@ -70,7 +69,6 @@ export function ScanAbsensi() {
     };
   }, []);
 
-  // Filter siswa saat search manual
   useEffect(() => {
     if (manualSearch.trim() === "") {
       setFilteredSiswa(allSiswa);
@@ -221,7 +219,6 @@ export function ScanAbsensi() {
     }
   };
 
-  // Input manual Izin/Sakit/Alfa
   const handleManualAbsensi = async (
     siswa: Siswa,
     status: "izin" | "sakit" | "alfa",
@@ -229,7 +226,6 @@ export function ScanAbsensi() {
     setManualLoading(true);
     const today = new Date().toISOString().split("T")[0];
 
-    // Cek sudah absen belum
     const { data: existing } = await supabase
       .from("absensi")
       .select("status")
@@ -256,7 +252,6 @@ export function ScanAbsensi() {
       toast.success(`${siswa.nama} dicatat ${status.toUpperCase()}!`);
       playSuccessSound();
 
-      // Kirim notif WA
       const { data: settingsData } = await supabase
         .from("settings")
         .select("*")
@@ -497,7 +492,6 @@ export function ScanAbsensi() {
     }
   };
 
-  // Cek apakah siswa sudah absen hari ini
   const isSudahAbsen = (siswaId: string) =>
     todayRecords.some((r) => r.studentId === siswaId);
 
@@ -539,12 +533,11 @@ export function ScanAbsensi() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
-          {/* Tab Scan QR / Input Manual */}
           <div className="flex gap-2">
             <button
               onClick={() => setShowManual(false)}
               className={cn(
-                "flex-1 py-2.5 rounded-lg text-sm font-medium border transition-colors",
+                "flex-1 py-2.5 rounded-lg text-sm font-medium border transition-colors cursor-pointer",
                 !showManual
                   ? "bg-primary text-primary-foreground border-primary"
                   : "border-input hover:bg-muted",
@@ -555,7 +548,7 @@ export function ScanAbsensi() {
             <button
               onClick={() => setShowManual(true)}
               className={cn(
-                "flex-1 py-2.5 rounded-lg text-sm font-medium border transition-colors",
+                "flex-1 py-2.5 rounded-lg text-sm font-medium border transition-colors cursor-pointer",
                 showManual
                   ? "bg-primary text-primary-foreground border-primary"
                   : "border-input hover:bg-muted",
@@ -566,7 +559,6 @@ export function ScanAbsensi() {
             </button>
           </div>
 
-          {/* Panel Scan QR */}
           {!showManual && (
             <Card>
               <CardHeader>
@@ -579,6 +571,7 @@ export function ScanAbsensi() {
                         setMode("masuk");
                         setErrorMessage("");
                       }}
+                      className="cursor-pointer"
                     >
                       Absen Masuk
                     </Button>
@@ -588,6 +581,7 @@ export function ScanAbsensi() {
                         setMode("pulang");
                         setErrorMessage("");
                       }}
+                      className="cursor-pointer"
                     >
                       Absen Pulang
                     </Button>
@@ -618,13 +612,16 @@ export function ScanAbsensi() {
 
                 <div className="flex gap-2">
                   {!scanning ? (
-                    <Button className="w-full" onClick={startScanning}>
+                    <Button
+                      className="w-full cursor-pointer"
+                      onClick={startScanning}
+                    >
                       <Camera className="w-4 h-4" />
                       Mulai Scan
                     </Button>
                   ) : (
                     <Button
-                      className="w-full"
+                      className="w-full cursor-pointer"
                       variant="destructive"
                       onClick={stopScanning}
                     >
@@ -643,14 +640,12 @@ export function ScanAbsensi() {
             </Card>
           )}
 
-          {/* Panel Input Manual */}
           {showManual && (
             <Card>
               <CardHeader>
                 <CardTitle>Input Manual Ketidakhadiran</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {/* Search siswa */}
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <Input
@@ -661,7 +656,6 @@ export function ScanAbsensi() {
                   />
                 </div>
 
-                {/* Daftar siswa */}
                 <div className="space-y-2 max-h-[500px] overflow-y-auto">
                   {filteredSiswa.length === 0 && (
                     <p className="text-center text-muted-foreground py-8">
@@ -685,7 +679,6 @@ export function ScanAbsensi() {
                         )}
                       >
                         <div className="flex items-center gap-3">
-                          {/* Avatar */}
                           <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-sm font-medium text-primary flex-shrink-0">
                             {siswa.nama.charAt(0).toUpperCase()}
                           </div>
@@ -747,7 +740,6 @@ export function ScanAbsensi() {
             </Card>
           )}
 
-          {/* Card sukses scan */}
           {showSuccess && lastScan && !showManual && (
             <Card className="border-primary bg-primary/5">
               <CardContent className="p-6">
@@ -813,7 +805,6 @@ export function ScanAbsensi() {
           )}
         </div>
 
-        {/* Sidebar statistik */}
         <div className="space-y-6">
           <Card>
             <CardHeader>
@@ -898,7 +889,6 @@ export function ScanAbsensi() {
         </div>
       </div>
 
-      {/* Tabel riwayat */}
       <Card>
         <CardHeader>
           <CardTitle>Riwayat Absensi Hari Ini</CardTitle>

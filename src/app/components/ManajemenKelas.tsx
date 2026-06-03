@@ -116,7 +116,6 @@ export function ManajemenKelas() {
   const handleDeleteKelas = async () => {
     if (!deletingId) return;
 
-    // Cek apakah masih ada siswa di kelas ini
     const kelas = kelasList.find((k) => k.id === deletingId);
     if (kelas && kelas.jumlahSiswa > 0) {
       toast.error(
@@ -156,7 +155,6 @@ export function ManajemenKelas() {
 
   return (
     <div className="p-6 space-y-6">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-foreground">
@@ -168,14 +166,13 @@ export function ManajemenKelas() {
         </div>
         <button
           onClick={() => setIsAddDialogOpen(true)}
-          className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm font-medium hover:bg-primary/90"
+          className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm font-medium hover:bg-primary/90 cursor-pointer"
         >
           <Plus className="w-4 h-4" />
           Tambah Kelas
         </button>
       </div>
 
-      {/* Dialog Tambah / Edit */}
       <Dialog
         open={isAddDialogOpen || editingKelas !== null}
         onOpenChange={closeDialog}
@@ -235,13 +232,18 @@ export function ManajemenKelas() {
               />
             </div>
 
-            {/* Jumlah siswa dihapus dari form — otomatis dari DB */}
-
             <div className="flex justify-end gap-2 pt-4 border-t">
-              <Button variant="outline" onClick={closeDialog}>
+              <Button
+                variant="outline"
+                onClick={closeDialog}
+                className="cursor-pointer"
+              >
                 Batal
               </Button>
-              <Button onClick={editingKelas ? handleEditKelas : handleAddKelas}>
+              <Button
+                onClick={editingKelas ? handleEditKelas : handleAddKelas}
+                className="cursor-pointer"
+              >
                 {editingKelas ? "Simpan Perubahan" : "Tambah Kelas"}
               </Button>
             </div>
@@ -249,7 +251,6 @@ export function ManajemenKelas() {
         </DialogContent>
       </Dialog>
 
-      {/* Statistik */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
           <CardContent className="p-6">
@@ -300,7 +301,6 @@ export function ManajemenKelas() {
         </Card>
       </div>
 
-      {/* List Kelas */}
       {loading ? (
         <div className="text-center py-12">
           <p className="text-muted-foreground">Memuat data kelas...</p>
@@ -337,7 +337,7 @@ export function ManajemenKelas() {
                   <Button
                     variant="outline"
                     size="sm"
-                    className="flex-1"
+                    className="flex-1 cursor-pointer"
                     onClick={() => openEditDialog(kelas)}
                   >
                     <Edit className="w-4 h-4" />
@@ -345,7 +345,7 @@ export function ManajemenKelas() {
                   </Button>
                   <button
                     onClick={() => setDeletingId(kelas.id)}
-                    className="flex-1 inline-flex items-center justify-center gap-2 border border-input px-3 py-1.5 rounded-md text-sm hover:bg-muted"
+                    className="flex-1 inline-flex items-center justify-center gap-2 border border-input px-3 py-1.5 rounded-md text-sm hover:bg-muted cursor-pointer"
                   >
                     <Trash2 className="w-4 h-4 text-destructive" />
                     Hapus
@@ -357,7 +357,6 @@ export function ManajemenKelas() {
         </div>
       )}
 
-      {/* Dialog Konfirmasi Hapus */}
       <Dialog
         open={deletingId !== null}
         onOpenChange={() => setDeletingId(null)}
@@ -373,13 +372,13 @@ export function ManajemenKelas() {
           <div className="flex justify-end gap-2 pt-4">
             <button
               onClick={() => setDeletingId(null)}
-              className="px-4 py-2 rounded-md border border-input text-sm hover:bg-muted"
+              className="px-4 py-2 rounded-md border border-input text-sm hover:bg-muted cursor-pointer"
             >
               Batal
             </button>
             <button
               onClick={handleDeleteKelas}
-              className="px-4 py-2 rounded-md bg-destructive text-destructive-foreground text-sm hover:bg-destructive/90"
+              className="px-4 py-2 rounded-md bg-destructive text-destructive-foreground text-sm hover:bg-destructive/90 cursor-pointer"
             >
               Hapus
             </button>

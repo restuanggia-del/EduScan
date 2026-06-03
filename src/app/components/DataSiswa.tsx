@@ -213,7 +213,7 @@ export function DataSiswa({
 
         <button
           onClick={() => setIsAddDialogOpen(true)}
-          className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm font-medium hover:bg-primary/90"
+          className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm font-medium hover:bg-primary/90 cursor-pointer"
         >
           <Plus className="w-4 h-4" />
           Tambah Siswa
@@ -359,13 +359,18 @@ export function DataSiswa({
               </div>
 
               <div className="flex justify-end gap-2 pt-4 border-t">
-                <Button variant="outline" onClick={closeDialog}>
+                <Button
+                  variant="outline"
+                  onClick={closeDialog}
+                  className="cursor-pointer"
+                >
                   Batal
                 </Button>
                 <Button
                   onClick={
                     editingStudent ? handleEditStudent : handleAddStudent
                   }
+                  className="cursor-pointer"
                 >
                   {editingStudent ? "Simpan Perubahan" : "Tambah Siswa"}
                 </Button>
@@ -380,11 +385,13 @@ export function DataSiswa({
           <div className="flex items-center justify-between">
             <CardTitle>Daftar Siswa</CardTitle>
             <div className="relative w-80">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground z-10" />
+
               <Input
                 value={localSearch}
                 onChange={(e) => setLocalSearch(e.target.value)}
                 placeholder="Cari nama, NISN, atau kelas..."
+                className="pl-10"
               />
             </div>
           </div>
@@ -458,12 +465,13 @@ export function DataSiswa({
                             variant="ghost"
                             size="icon"
                             onClick={() => openEditDialog(student)}
+                            className="cursor-pointer"
                           >
                             <Edit className="w-4 h-4" />
                           </Button>
                           <button
                             onClick={() => setDeletingId(student.id)}
-                            className="p-2 rounded-md hover:bg-muted"
+                            className="p-2 rounded-md hover:bg-muted cursor-pointer"
                           >
                             <Trash2 className="w-4 h-4 text-destructive" />
                           </button>

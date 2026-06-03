@@ -186,7 +186,7 @@ export function Login() {
             <button
               onClick={mode === "login" ? handleLogin : handleRegister}
               disabled={loading}
-              className="w-full bg-primary text-primary-foreground py-2 rounded-md font-medium hover:bg-primary/90 disabled:opacity-50"
+              className="w-full bg-primary text-primary-foreground py-2 rounded-md font-medium hover:bg-primary/90 disabled:opacity-50 cursor-pointer"
             >
               {loading ? "Memproses..." : mode === "login" ? "Masuk" : "Daftar"}
             </button>
@@ -196,7 +196,7 @@ export function Login() {
               {mode === "login" ? "Belum punya akun?" : "Sudah punya akun?"}{" "}
               <button
                 onClick={() => setMode(mode === "login" ? "register" : "login")}
-                className="text-primary font-medium hover:underline"
+                className="text-primary font-medium hover:underline cursor-pointer"
               >
                 {mode === "login" ? "Daftar di sini" : "Masuk di sini"}
               </button>
