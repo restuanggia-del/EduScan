@@ -31,9 +31,9 @@ function StudentCard({ student }: StudentCardProps) {
       <div className="bg-gradient-to-r from-primary to-secondary p-4 text-center">
         <div className="flex items-center justify-center gap-2 mb-2">
           <School className="w-6 h-6 text-white" />
-          <h3 className="text-white font-bold text-lg">SMA Negeri 1</h3>
+          <h3 className="text-white font-bold text-lg">SMK MMT</h3>
         </div>
-        <p className="text-white/90 text-xs">Bandar Lampung</p>
+        <p className="text-white/90 text-xs">Penawar Aji</p>
       </div>
 
       <div className="p-4 space-y-3">

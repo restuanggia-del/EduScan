@@ -15,6 +15,7 @@ import { Login } from "./components/Login";
 export default function App() {
   const { user, loading } = useAuth();
   const [currentPage, setCurrentPage] = useState("dashboard");
+  const [searchQuery, setSearchQuery] = useState("");
 
   if (loading) {
     return (
@@ -31,7 +32,7 @@ export default function App() {
       case "dashboard":
         return <Dashboard />;
       case "siswa":
-        return <DataSiswa />;
+        return <DataSiswa searchQuery={searchQuery} />;
       case "kelas":
         return <ManajemenKelas />;
       case "qr":
@@ -52,7 +53,7 @@ export default function App() {
       <Sidebar currentPage={currentPage} onNavigate={setCurrentPage} />
 
       <div className="flex-1 flex flex-col overflow-hidden">
-        <Header />
+        <Header onSearch={setSearchQuery} />
 
         <main className="flex-1 overflow-y-auto">{renderPage()}</main>
       </div>

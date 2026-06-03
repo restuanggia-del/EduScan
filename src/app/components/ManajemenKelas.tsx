@@ -37,21 +37,28 @@ export function ManajemenKelas() {
 
   const fetchKelas = async () => {
     setLoading(true);
-    const { data, error } = await supabase
+    const { data: kelasData, error } = await supabase
       .from("kelas")
       .select("*")
       .order("nama_kelas", { ascending: true });
 
     if (error) {
       console.error("Error fetching kelas:", error.message);
-    } else if (data) {
+      setLoading(false);
+      return;
+    }
+
+    const { data: siswaData } = await supabase.from("siswa").select("kelas");
+
+    if (kelasData) {
       setKelasList(
-        data.map((k) => ({
+        kelasData.map((k) => ({
           id: k.id,
           namaKelas: k.nama_kelas,
           tingkatKelas: k.tingkat_kelas,
           waliKelas: k.wali_kelas,
-          jumlahSiswa: k.jumlah_siswa || 0,
+          jumlahSiswa:
+            siswaData?.filter((s) => s.kelas === k.nama_kelas).length || 0,
         })),
       );
     }
@@ -65,7 +72,6 @@ export function ManajemenKelas() {
         nama_kelas: formData.namaKelas,
         tingkat_kelas: formData.tingkatKelas,
         wali_kelas: formData.waliKelas,
-        jumlah_siswa: formData.jumlahSiswa || 0,
       });
 
       if (error) {
@@ -93,7 +99,6 @@ export function ManajemenKelas() {
           nama_kelas: formData.namaKelas,
           tingkat_kelas: formData.tingkatKelas,
           wali_kelas: formData.waliKelas,
-          jumlah_siswa: formData.jumlahSiswa || 0,
         })
         .eq("id", editingKelas.id);
 
@@ -110,11 +115,21 @@ export function ManajemenKelas() {
 
   const handleDeleteKelas = async () => {
     if (!deletingId) return;
+
+    // Cek apakah masih ada siswa di kelas ini
+    const kelas = kelasList.find((k) => k.id === deletingId);
+    if (kelas && kelas.jumlahSiswa > 0) {
+      toast.error(
+        `Tidak bisa hapus! Masih ada ${kelas.jumlahSiswa} siswa di kelas ${kelas.namaKelas}.`,
+      );
+      setDeletingId(null);
+      return;
+    }
+
     const { error } = await supabase
       .from("kelas")
       .delete()
       .eq("id", deletingId);
-
     if (error) {
       toast.error("Gagal menghapus kelas: " + error.message);
     } else {
@@ -151,7 +166,6 @@ export function ManajemenKelas() {
             Kelola data kelas dan wali kelas
           </p>
         </div>
-
         <button
           onClick={() => setIsAddDialogOpen(true)}
           className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm font-medium hover:bg-primary/90"
@@ -221,21 +235,7 @@ export function ManajemenKelas() {
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="jumlahSiswa">Jumlah Siswa</Label>
-              <Input
-                id="jumlahSiswa"
-                type="number"
-                value={formData.jumlahSiswa || ""}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    jumlahSiswa: parseInt(e.target.value) || 0,
-                  })
-                }
-                placeholder="0"
-              />
-            </div>
+            {/* Jumlah siswa dihapus dari form — otomatis dari DB */}
 
             <div className="flex justify-end gap-2 pt-4 border-t">
               <Button variant="outline" onClick={closeDialog}>
@@ -305,6 +305,14 @@ export function ManajemenKelas() {
         <div className="text-center py-12">
           <p className="text-muted-foreground">Memuat data kelas...</p>
         </div>
+      ) : kelasList.length === 0 ? (
+        <Card>
+          <CardContent className="p-12 text-center">
+            <p className="text-muted-foreground">
+              Belum ada data kelas. Silakan tambah kelas baru.
+            </p>
+          </CardContent>
+        </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {kelasList.map((kelas) => (
@@ -347,16 +355,6 @@ export function ManajemenKelas() {
             </Card>
           ))}
         </div>
-      )}
-
-      {!loading && kelasList.length === 0 && (
-        <Card>
-          <CardContent className="p-12 text-center">
-            <p className="text-muted-foreground">
-              Belum ada data kelas. Silakan tambah kelas baru.
-            </p>
-          </CardContent>
-        </Card>
       )}
 
       {/* Dialog Konfirmasi Hapus */}

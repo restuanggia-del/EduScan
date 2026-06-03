@@ -30,7 +30,7 @@ export function ScanAbsensi() {
 
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const qrReaderRef = useRef<HTMLDivElement>(null);
-  const [isProcessing, setIsProcessing] = useState(false);
+  const isProcessingRef = useRef(false);
 
   useEffect(() => {
     fetchTodayAbsensi();
@@ -166,12 +166,12 @@ export function ScanAbsensi() {
   };
 
   const handleScanSuccess = async (decodedText: string) => {
-    if (isProcessing) return;
-    setIsProcessing(true);
+    if (isProcessingRef.current) return;
+    isProcessingRef.current = true;
+
     try {
       const data = JSON.parse(decodedText);
 
-      // Ambil settings langsung dari DB setiap scan
       const { data: settingsData } = await supabase
         .from("settings")
         .select("*")
@@ -189,7 +189,6 @@ export function ScanAbsensi() {
         notifTerlambat: settingsData?.notif_terlambat ?? true,
       };
 
-      // Ambil data siswa
       const { data: siswa, error: siswaError } = await supabase
         .from("siswa")
         .select("id, nama, nisn, kelas, foto_url, no_wa")
@@ -205,7 +204,6 @@ export function ScanAbsensi() {
       const jamSekarang = getCurrentTime();
       const menitSekarang = toMenit(jamSekarang);
 
-      // Cek absensi hari ini
       const { data: existing } = await supabase
         .from("absensi")
         .select("status")
@@ -223,7 +221,6 @@ export function ScanAbsensi() {
           return;
         }
 
-        // Validasi: tidak boleh absen masuk lebih dari 2 jam setelah batas
         const menitBatasMasuk = toMenit(jamBatasMasuk);
         if (menitSekarang > menitBatasMasuk + 120) {
           setErrorMessage(
@@ -277,7 +274,6 @@ export function ScanAbsensi() {
 
         setTimeout(() => setShowSuccess(false), 5000);
       } else {
-        // Mode pulang
         if (!sudahMasuk) {
           setErrorMessage(`${siswa.nama} belum absen masuk hari ini!`);
           return;
@@ -287,7 +283,6 @@ export function ScanAbsensi() {
           return;
         }
 
-        // Validasi: tidak boleh pulang sebelum jam batas pulang
         const menitBatasPulang = toMenit(jamBatasPulang);
         if (menitSekarang < menitBatasPulang) {
           setErrorMessage(
@@ -346,7 +341,9 @@ export function ScanAbsensi() {
       console.error("Error:", err);
       setErrorMessage("Format QR code tidak valid!");
     } finally {
-      setTimeout(() => setIsProcessing(false), 3000);
+      setTimeout(() => {
+        isProcessingRef.current = false;
+      }, 3000);
     }
   };
 
@@ -381,7 +378,6 @@ export function ScanAbsensi() {
     }
   };
 
-  // Statistik
   const totalHadir = todayRecords.filter((r) => r.status === "hadir").length;
   const totalTerlambat = todayRecords.filter(
     (r) => r.status === "terlambat",

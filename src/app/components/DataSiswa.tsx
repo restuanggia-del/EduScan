@@ -26,19 +26,36 @@ interface Student {
   foto?: string;
 }
 
-export function DataSiswa() {
+export function DataSiswa({
+  searchQuery: headerSearch = "",
+}: {
+  searchQuery?: string;
+}) {
+  const [localSearch, setLocalSearch] = useState("");
   const [students, setStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState("");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
   const [formData, setFormData] = useState<Partial<Student>>({});
   const [errorMsg, setErrorMsg] = useState("");
   const [uploading, setUploading] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [kelasList, setKelasList] = useState<
+    { id: string; namaKelas: string }[]
+  >([]);
+
+  const activeSearch = headerSearch || localSearch;
+
+  const filteredStudents = students.filter(
+    (student) =>
+      student.nama.toLowerCase().includes(activeSearch.toLowerCase()) ||
+      student.nisn.includes(activeSearch) ||
+      student.kelas.toLowerCase().includes(activeSearch.toLowerCase()),
+  );
 
   useEffect(() => {
     fetchStudents();
+    fetchKelasList();
   }, []);
 
   const fetchStudents = async () => {
@@ -67,12 +84,15 @@ export function DataSiswa() {
     setLoading(false);
   };
 
-  const filteredStudents = students.filter(
-    (student) =>
-      student.nama.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      student.nisn.includes(searchQuery) ||
-      student.kelas.toLowerCase().includes(searchQuery.toLowerCase()),
-  );
+  const fetchKelasList = async () => {
+    const { data } = await supabase
+      .from("kelas")
+      .select("id, nama_kelas")
+      .order("nama_kelas");
+    if (data) {
+      setKelasList(data.map((k) => ({ id: k.id, namaKelas: k.nama_kelas })));
+    }
+  };
 
   const handleAddStudent = async () => {
     setErrorMsg("");
@@ -276,14 +296,26 @@ export function DataSiswa() {
 
               <div className="space-y-2">
                 <Label htmlFor="kelas">Kelas *</Label>
-                <Input
-                  id="kelas"
+                <select
+                  className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm"
                   value={formData.kelas || ""}
                   onChange={(e) =>
                     setFormData({ ...formData, kelas: e.target.value })
                   }
-                  placeholder="Contoh: XII IPA 1"
-                />
+                >
+                  <option value="">Pilih Kelas</option>
+                  {kelasList.map((k) => (
+                    <option key={k.id} value={k.namaKelas}>
+                      {k.namaKelas}
+                    </option>
+                  ))}
+                </select>
+                {kelasList.length === 0 && (
+                  <p className="text-xs text-amber-600">
+                    ⚠️ Belum ada kelas. Tambah kelas dulu di menu Manajemen
+                    Kelas.
+                  </p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -350,11 +382,9 @@ export function DataSiswa() {
             <div className="relative w-80">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
-                type="search"
+                value={localSearch}
+                onChange={(e) => setLocalSearch(e.target.value)}
                 placeholder="Cari nama, NISN, atau kelas..."
-                className="pl-10"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
           </div>
