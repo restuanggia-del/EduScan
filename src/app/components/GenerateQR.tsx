@@ -232,11 +232,18 @@ export function GenerateQR() {
             <CardTitle>Daftar Siswa</CardTitle>
             {selectedStudents.length > 0 && (
               <div className="flex gap-2">
-                <Button onClick={() => window.print()}>
+                <Button
+                  onClick={() => window.print()}
+                  className="cursor-pointer"
+                >
                   <Printer className="w-4 h-4" />
                   Cetak
                 </Button>
-                <Button variant="outline" onClick={() => window.print()}>
+                <Button
+                  variant="outline"
+                  onClick={() => window.print()}
+                  className="cursor-pointer"
+                >
                   <Download className="w-4 h-4" />
                   Download PDF
                 </Button>

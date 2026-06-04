@@ -279,13 +279,13 @@ export function ScanAbsensi() {
           templatePulang: settingsData?.template_pulang || "",
           templateIzin:
             settingsData?.template_izin ||
-            "Siswa [nama] tidak hadir hari ini dengan keterangan Izin.",
+            "Ananda [nama] tidak hadir hari ini dengan keterangan Izin.",
           templateSakit:
             settingsData?.template_sakit ||
-            "Siswa [nama] tidak hadir hari ini dengan keterangan Sakit.",
+            "Ananda [nama] tidak hadir hari ini dengan keterangan Sakit.",
           templateAlfa:
             settingsData?.template_alfa ||
-            "Siswa [nama] tidak hadir hari ini tanpa keterangan (Alfa).",
+            "Ananda [nama] tidak hadir hari ini tanpa keterangan (Alfa).",
         };
 
         await sendWhatsAppNotification(
@@ -336,22 +336,22 @@ export function ScanAbsensi() {
       const templates = {
         templateMasuk:
           settingsData?.template_masuk ||
-          "Siswa [nama] telah hadir di sekolah pada pukul [jam] WIB.",
+          "Ananda [nama] telah hadir di sekolah pada pukul [jam] WIB.",
         templateTerlambat:
           settingsData?.template_terlambat ||
-          "Siswa [nama] terlambat masuk sekolah. Jam Masuk: [jam] WIB.",
+          "Ananda [nama] terlambat masuk sekolah. Jam Masuk: [jam] WIB.",
         templatePulang:
           settingsData?.template_pulang ||
-          "Siswa [nama] telah meninggalkan sekolah pada pukul [jam] WIB.",
+          "Ananda [nama] telah meninggalkan sekolah pada pukul [jam] WIB.",
         templateIzin:
           settingsData?.template_izin ||
-          "Siswa [nama] tidak hadir hari ini dengan keterangan Izin.",
+          "Ananda [nama] tidak hadir hari ini dengan keterangan Izin.",
         templateSakit:
           settingsData?.template_sakit ||
-          "Siswa [nama] tidak hadir hari ini dengan keterangan Sakit.",
+          "Ananda [nama] tidak hadir hari ini dengan keterangan Sakit.",
         templateAlfa:
           settingsData?.template_alfa ||
-          "Siswa [nama] tidak hadir hari ini tanpa keterangan (Alfa).",
+          "Ananda [nama] tidak hadir hari ini tanpa keterangan (Alfa).",
       };
 
       const { data: siswa, error: siswaError } = await supabase

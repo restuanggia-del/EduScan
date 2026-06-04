@@ -17,7 +17,7 @@ import { toast } from "sonner";
 
 export function Pengaturan() {
   const [settings, setSettings] = useState({
-    namaSekolah: "SMA Negeri 1 Bandar Lampung",
+    namaSekolah: "SMK MMT Penawar Aji",
     jamBatasMasuk: "07:30",
     jamBatasPulang: "15:00",
     whatsappEnabled: true,
@@ -27,17 +27,17 @@ export function Pengaturan() {
     notifTerlambat: true,
 
     templateMasuk:
-      "Ananda [nama] telah hadir di sekolah pada pukul [jam] WIB.\n\nSMA Negeri 1",
+      "Ananda [nama] telah hadir di sekolah pada pukul [jam] WIB.\n\nSMK MMT Penawar Aji",
     templateTerlambat:
-      "Ananda [nama] terlambat masuk sekolah.\n\nJam Masuk:\n[jam] WIB\n\nSMA Negeri 1",
+      "Ananda [nama] terlambat masuk sekolah pada pukul [jam] WIB\n\nSMK MMT Penawar Aji",
     templatePulang:
-      "Ananda [nama] telah meninggalkan sekolah pada pukul [jam] WIB.\n\nSMA Negeri 1",
+      "Ananda [nama] telah meninggalkan sekolah pada pukul [jam] WIB.\n\nSMK MMT Penawar Aji",
     templateIzin:
-      "Ananda [nama] tidak hadir hari ini dengan keterangan Izin.\n\nSMA Negeri 1",
+      "Ananda [nama] tidak hadir hari ini dengan keterangan Izin.\n\nSMK MMT Penawar Aji",
     templateSakit:
-      "Ananda [nama] tidak hadir hari ini dengan keterangan Sakit.\n\nSMA Negeri 1",
+      "Ananda [nama] tidak hadir hari ini dengan keterangan Sakit.\n\nSMK MMT Penawar Aji",
     templateAlfa:
-      "Ananda [nama] tidak hadir hari ini tanpa keterangan (Alfa).\n\nSMA Negeri 1",
+      "Ananda [nama] tidak hadir hari ini tanpa keterangan (Alfa).\n\nSMK MMT Penawar Aji",
   });
 
   const [testNumber, setTestNumber] = useState("");
@@ -94,6 +94,13 @@ export function Pengaturan() {
         notif_pulang: settings.notifPulang,
         notif_terlambat: settings.notifTerlambat,
         updated_at: new Date().toISOString(),
+
+        template_masuk: settings.templateMasuk,
+        template_terlambat: settings.templateTerlambat,
+        template_pulang: settings.templatePulang,
+        template_izin: settings.templateIzin,
+        template_sakit: settings.templateSakit,
+        template_alfa: settings.templateAlfa,
       })
       .eq("id", 1);
 
