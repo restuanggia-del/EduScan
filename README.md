@@ -1,2 +1,3 @@
+## EduScan
 
-  EduScan, "Sistem Absensi Sekolah Berbasis QR Code dan Notifikasi WhatsApp Real-Time.":
+EduScan adalah sistem absensi sekolah berbasis QR Code yang terintegrasi dengan notifikasi WhatsApp secara real-time. Aplikasi ini dirancang untuk membantu sekolah dalam mengelola kehadiran siswa secara digital, cepat, dan efisien.
