@@ -199,6 +199,15 @@ export function Header({
     : "U";
 
   const unreadCount = notifications.filter((n) => !n.dibaca).length;
+  const markAllAsRead = () => {
+    setNotifications((prev) =>
+      prev.map((notif) => ({
+        ...notif,
+        dibaca: true,
+      })),
+    );
+  };
+
   const [searchResults, setSearchResults] = useState<
     {
       type: string;
@@ -207,6 +216,7 @@ export function Header({
       page: string;
     }[]
   >([]);
+
   const [showResults, setShowResults] = useState(false);
   const [searchLoading, setSearchLoading] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
@@ -360,7 +370,13 @@ export function Header({
         <div className="flex items-center gap-3">
           <div className="relative" ref={bellRef}>
             <button
-              onClick={() => setShowBell(!showBell)}
+              onClick={() => {
+                setShowBell(!showBell);
+
+                if (!showBell) {
+                  markAllAsRead();
+                }
+              }}
               className="p-2 rounded-md hover:bg-muted relative cursor-pointer"
             >
               <Bell className="w-5 h-5" />
