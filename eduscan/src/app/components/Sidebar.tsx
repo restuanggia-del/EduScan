@@ -23,16 +23,16 @@ const allMenuItems = [
     roles: ["super_admin", "operator", "guru"],
   },
   {
-    id: "siswa",
-    label: "Data Siswa",
-    icon: Users,
-    roles: ["super_admin", "operator", "guru"],
-  },
-  {
     id: "kelas",
     label: "Manajemen Kelas",
     icon: BarChart3,
     roles: ["super_admin", "operator"],
+  },
+  {
+    id: "siswa",
+    label: "Data Siswa",
+    icon: Users,
+    roles: ["super_admin", "operator", "guru"],
   },
   {
     id: "qr",
