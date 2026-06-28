@@ -73,6 +73,15 @@ Deno.serve(async (req) => {
             throw new Error("STEP clear_kelas: " + JSON.stringify(clearKelasError));
         }
 
+        const { error: clearAbsensiError } = await supabaseAdmin
+            .from("absensi_guru")
+            .update({ guru_id: null })
+            .eq("guru_id", guru_id);
+
+        if (clearAbsensiError) {
+            throw new Error("STEP clear_absensi_guru: " + JSON.stringify(clearAbsensiError));
+        }
+
         const { error: deleteGuruError } = await supabaseAdmin
             .from("guru")
             .delete()
