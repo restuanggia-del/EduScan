@@ -108,7 +108,7 @@ export function RekapAbsensi() {
     }
 
     const { data: absensiData } = await supabase
-      .from("absensi")
+      .from("absensi_siswa")
       .select("siswa_id, status, tanggal")
       .gte("tanggal", start)
       .lte("tanggal", end);

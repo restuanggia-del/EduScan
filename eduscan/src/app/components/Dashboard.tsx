@@ -81,7 +81,7 @@ export function Dashboard() {
 
   const fetchStatHarian = async (today: string) => {
     const { data } = await supabase
-      .from("absensi")
+      .from("absensi_siswa")
       .select("status")
       .eq("tanggal", today);
 
@@ -99,7 +99,7 @@ export function Dashboard() {
   const fetchRecentActivity = async () => {
     const today = new Date().toISOString().split("T")[0];
     const { data } = await supabase
-      .from("absensi")
+      .from("absensi_siswa")
       .select("status, waktu_scan, siswa(nama, kelas)")
       .eq("tanggal", today)
       .order("waktu_scan", { ascending: false })
@@ -138,7 +138,7 @@ export function Dashboard() {
       const dayLabel = days[date.getDay()];
 
       const { data } = await supabase
-        .from("absensi")
+        .from("absensi_siswa")
         .select("id")
         .eq("tanggal", dateStr)
         .in("status", ["hadir", "terlambat"]);
@@ -176,7 +176,7 @@ export function Dashboard() {
       const end = new Date(year, month + 1, 0).toISOString().split("T")[0];
 
       const { data } = await supabase
-        .from("absensi")
+        .from("absensi_siswa")
         .select("id")
         .gte("tanggal", start)
         .lte("tanggal", end)

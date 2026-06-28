@@ -97,7 +97,7 @@ export function Header({
 
   const fetchNotifikasi = async () => {
     const { data } = await supabase
-      .from("absensi")
+      .from("absensi_siswa")
       .select("id, status, waktu_scan, siswa(nama, kelas)")
       .order("waktu_scan", { ascending: false })
       .limit(5);
@@ -274,7 +274,7 @@ export function Header({
 
     const today = new Date().toISOString().split("T")[0];
     const { data: absensiData } = await supabase
-      .from("absensi")
+      .from("absensi_siswa")
       .select("status, tanggal, siswa(nama, kelas)")
       .eq("tanggal", today)
       .limit(3);
