@@ -21,6 +21,7 @@ import {
 } from "./ui/dialog";
 import { Label } from "./ui/label";
 import { Button } from "./ui/button";
+import { cn } from "./ui/utils";
 
 const roleLabels: Record<string, string> = {
   kepala_sekolah: "Kepala Sekolah",
@@ -35,7 +36,8 @@ export function Header({
   onSearch?: (q: string) => void;
   onNavigate?: (page: string) => void;
 }) {
-  const { user, signOut } = useAuth();
+  const { user, signOut, mustChangePassword, clearMustChangePassword } =
+    useAuth();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -56,6 +58,13 @@ export function Header({
     { id: string; pesan: string; waktu: string; dibaca: boolean }[]
   >([]);
   const bellRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (mustChangePassword) {
+      setProfilForm((prev) => ({ ...prev, nama: user?.nama || "" }));
+      setShowProfil(true);
+    }
+  }, [mustChangePassword, user?.nama]);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -140,6 +149,11 @@ export function Header({
       return;
     }
 
+    if (mustChangePassword && !profilForm.passwordBaru) {
+      toast.error("Kamu wajib mengganti password default sebelum melanjutkan!");
+      return;
+    }
+
     setSavingProfil(true);
 
     const { error: nameError } = await supabase
@@ -167,6 +181,7 @@ export function Header({
 
       const { error: passError } = await supabase.auth.updateUser({
         password: profilForm.passwordBaru,
+        data: { must_change_password: false },
       });
 
       if (passError) {
@@ -174,6 +189,8 @@ export function Header({
         setSavingProfil(false);
         return;
       }
+
+      clearMustChangePassword();
     }
 
     toast.success("Profil berhasil diperbarui!");
@@ -525,14 +542,39 @@ export function Header({
         </DialogContent>
       </Dialog>
 
-      <Dialog open={showProfil} onOpenChange={setShowProfil}>
-        <DialogContent className="max-w-md">
+      <Dialog
+        open={showProfil}
+        onOpenChange={(open) => {
+          if (!open && mustChangePassword) return; // tidak bisa ditutup kalau wajib ganti password
+          setShowProfil(open);
+        }}
+      >
+        <DialogContent
+          className={cn("max-w-md", mustChangePassword && "[&>button]:hidden")}
+          onInteractOutside={(e) => {
+            if (mustChangePassword) e.preventDefault();
+          }}
+          onEscapeKeyDown={(e) => {
+            if (mustChangePassword) e.preventDefault();
+          }}
+        >
           <DialogHeader>
-            <DialogTitle>Edit Profil</DialogTitle>
+            <DialogTitle>
+              {mustChangePassword ? "Ganti Password Wajib" : "Edit Profil"}
+            </DialogTitle>
             <DialogDescription>
-              Ubah nama tampilan atau password akun kamu.
+              {mustChangePassword
+                ? "Ini login pertama kamu. Untuk keamanan, ganti password default sebelum melanjutkan."
+                : "Ubah nama tampilan atau password akun kamu."}
             </DialogDescription>
           </DialogHeader>
+
+          {mustChangePassword && (
+            <div className="bg-amber-50 border border-amber-200 text-amber-800 text-sm rounded-md p-3">
+              ⚠️ Kamu wajib mengganti password sebelum bisa menggunakan
+              aplikasi.
+            </div>
+          )}
 
           <div className="space-y-4 py-2">
             <div className="flex justify-center">

@@ -92,6 +92,18 @@ Deno.serve(async (req) => {
         }
 
         if (guruData.user_id) {
+
+            const { error: clearAbsensiUserError } = await supabaseAdmin
+                .from("absensi_guru")
+                .update({ user_id: null })
+                .eq("user_id", guruData.user_id);
+
+            if (clearAbsensiUserError) {
+                throw new Error(
+                    "STEP clear_absensi_guru_user: " + JSON.stringify(clearAbsensiUserError),
+                );
+            }
+
             const { error: deleteUserRowError } = await supabaseAdmin
                 .from("users")
                 .delete()

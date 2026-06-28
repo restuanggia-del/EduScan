@@ -11,31 +11,45 @@ interface UserProfile {
 interface AuthContextType {
   user: UserProfile | null;
   loading: boolean;
+  mustChangePassword: boolean;
+  clearMustChangePassword: () => void;
   signOut: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
   loading: true,
+  mustChangePassword: false,
+  clearMustChangePassword: () => {},
   signOut: async () => {},
 });
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [mustChangePassword, setMustChangePassword] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) fetchProfile(session.user.id);
-      else setLoading(false);
+      if (session) {
+        fetchProfile(session.user.id);
+        setMustChangePassword(
+          !!session.user.user_metadata?.must_change_password,
+        );
+      } else setLoading(false);
     });
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session) fetchProfile(session.user.id);
-      else {
+      if (session) {
+        fetchProfile(session.user.id);
+        setMustChangePassword(
+          !!session.user.user_metadata?.must_change_password,
+        );
+      } else {
         setUser(null);
+        setMustChangePassword(false);
         setLoading(false);
       }
     });
@@ -54,13 +68,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setLoading(false);
   };
 
+  const clearMustChangePassword = () => setMustChangePassword(false);
+
   const signOut = async () => {
     await supabase.auth.signOut();
     setUser(null);
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, signOut }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        loading,
+        mustChangePassword,
+        clearMustChangePassword,
+        signOut,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
