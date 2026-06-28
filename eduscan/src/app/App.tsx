@@ -4,6 +4,7 @@ import { Header } from "./components/Header";
 import { Dashboard } from "./components/Dashboard";
 import { DataSiswa } from "./components/DataSiswa";
 import { ManajemenKelas } from "./components/ManajemenKelas";
+import { DataGuru } from "./components/DataGuru";
 import { GenerateQR } from "./components/GenerateQR";
 import { ScanAbsensi } from "./components/ScanAbsensi";
 import { Pengaturan } from "./components/Pengaturan";
@@ -67,15 +68,7 @@ export default function App() {
       case "kelas":
         return <ManajemenKelas />;
       case "guru":
-        return (
-          <div className="flex flex-col items-center justify-center h-full gap-4">
-            <div className="text-6xl">🚧</div>
-            <h2 className="text-2xl font-bold">Data Guru</h2>
-            <p className="text-muted-foreground text-center">
-              Halaman ini sedang dalam pengembangan (Tahap 3 berikutnya).
-            </p>
-          </div>
-        );
+        return <DataGuru />;
       case "qr":
         return <GenerateQR />;
       case "scan":
