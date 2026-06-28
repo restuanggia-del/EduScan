@@ -263,11 +263,24 @@ export function DataGuru() {
 
   const handleDelete = async (id: string) => {
     setDeletingId(id);
-    const { error } = await supabase.from("guru").delete().eq("id", id);
+
+    const { data, error } = await supabase.functions.invoke(
+      "delete-akun-guru",
+      {
+        body: { guru_id: id },
+      },
+    );
+
     if (error) {
       toast.error("Gagal menghapus: " + error.message);
+    } else if (data?.error) {
+      toast.error("Gagal menghapus: " + data.error);
     } else {
-      toast.success("Data guru dihapus.");
+      toast.success(
+        data?.akun_dihapus
+          ? "Data guru & akun login berhasil dihapus."
+          : "Data guru dihapus.",
+      );
       fetchGuru();
     }
     setDeletingId(null);
@@ -592,7 +605,7 @@ export function DataGuru() {
       >
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Akun Berhasil Dibuat</DialogTitle>
+            <DialogTitle>Akun Berhasil Dibuat 🎉</DialogTitle>
             <DialogDescription>
               Catat atau salin info berikut untuk diberikan ke guru yang
               bersangkutan. Password ini wajib diganti saat login pertama kali.
