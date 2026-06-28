@@ -31,10 +31,10 @@ export default function App() {
     const role = user?.role;
 
     const restricted: Record<string, string[]> = {
-      kelas: ["super_admin", "operator"],
-      qr: ["super_admin", "operator"],
-      scan: ["super_admin", "operator"],
-      pengaturan: ["super_admin"],
+      kelas: ["kepala_sekolah", "tu"],
+      guru: ["kepala_sekolah", "tu"],
+      qr: ["kepala_sekolah", "tu"],
+      pengaturan: ["kepala_sekolah"],
     };
 
     if (
@@ -66,6 +66,16 @@ export default function App() {
         return <DataSiswa searchQuery={searchQuery} />;
       case "kelas":
         return <ManajemenKelas />;
+      case "guru":
+        return (
+          <div className="flex flex-col items-center justify-center h-full gap-4">
+            <div className="text-6xl">🚧</div>
+            <h2 className="text-2xl font-bold">Data Guru</h2>
+            <p className="text-muted-foreground text-center">
+              Halaman ini sedang dalam pengembangan (Tahap 3 berikutnya).
+            </p>
+          </div>
+        );
       case "qr":
         return <GenerateQR />;
       case "scan":

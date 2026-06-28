@@ -23,9 +23,9 @@ import { Label } from "./ui/label";
 import { Button } from "./ui/button";
 
 const roleLabels: Record<string, string> = {
-  super_admin: "Super Admin",
-  operator: "Operator Sekolah",
-  guru: "Guru",
+  kepala_sekolah: "Kepala Sekolah",
+  tu: "TU",
+  guru_wali_kelas: "Guru Wali Kelas",
 };
 
 export function Header({
@@ -431,7 +431,7 @@ export function Header({
                   {user?.nama || "User"}
                 </div>
                 <div className="text-xs text-muted-foreground">
-                  {roleLabels[user?.role || "guru"]}
+                  {roleLabels[user?.role || "guru_wali_kelas"]}
                 </div>
               </div>
               <div className="w-9 h-9 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-medium text-sm">
@@ -448,7 +448,7 @@ export function Header({
                   <p className="font-medium text-sm">{user?.nama}</p>
                   <p className="text-xs text-muted-foreground">{user?.email}</p>
                   <span className="inline-block mt-1 px-2 py-0.5 bg-primary/10 text-primary text-xs rounded-full font-medium">
-                    {roleLabels[user?.role || "guru"]}
+                    {roleLabels[user?.role || "guru_wali_kelas"]}
                   </span>
                 </div>
 
