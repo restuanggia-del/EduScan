@@ -72,7 +72,6 @@ export function RekapGuru() {
         end: end.toISOString().split("T")[0],
       };
     }
-    // tahunan
     const start = new Date(date.getFullYear(), 0, 1);
     const end = new Date(date.getFullYear(), 11, 31);
     return {
@@ -257,7 +256,7 @@ export function RekapGuru() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-4">
             <div className="space-y-2">
               <Label>Periode</Label>
               <div className="flex gap-2 flex-wrap">
@@ -286,7 +285,7 @@ export function RekapGuru() {
               </div>
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-2 max-w-xs">
               <Label>Tanggal Acuan</Label>
               <Input
                 type="date"

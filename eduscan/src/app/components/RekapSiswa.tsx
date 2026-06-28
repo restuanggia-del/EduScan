@@ -284,7 +284,7 @@ export function RekapSiswa() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="space-y-4">
             <div className="space-y-2">
               <Label>Periode</Label>
               <div className="flex gap-2 flex-wrap">
@@ -313,43 +313,45 @@ export function RekapSiswa() {
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label>Tanggal Acuan</Label>
-              <Input
-                type="date"
-                value={selectedDate}
-                onChange={(e) => setSelectedDate(e.target.value)}
-              />
-              <p className="text-xs text-muted-foreground">
-                Periode: {start} s/d {end}
-              </p>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Kelas</Label>
-              {isGWK ? (
-                <div className="h-9 flex items-center px-3 rounded-md border border-input bg-muted text-sm">
-                  {kelasSendiri || "Memuat..."}
-                </div>
-              ) : (
-                <select
-                  className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm"
-                  value={selectedKelas}
-                  onChange={(e) => setSelectedKelas(e.target.value)}
-                >
-                  <option value="">Semua Kelas</option>
-                  {kelasList.map((k) => (
-                    <option key={k} value={k}>
-                      {k}
-                    </option>
-                  ))}
-                </select>
-              )}
-              {isGWK && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Tanggal Acuan</Label>
+                <Input
+                  type="date"
+                  value={selectedDate}
+                  onChange={(e) => setSelectedDate(e.target.value)}
+                />
                 <p className="text-xs text-muted-foreground">
-                  Guru Wali Kelas hanya bisa melihat rekap kelasnya sendiri.
+                  Periode: {start} s/d {end}
                 </p>
-              )}
+              </div>
+
+              <div className="space-y-2">
+                <Label>Kelas</Label>
+                {isGWK ? (
+                  <div className="h-9 flex items-center px-3 rounded-md border border-input bg-muted text-sm">
+                    {kelasSendiri || "Memuat..."}
+                  </div>
+                ) : (
+                  <select
+                    className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm"
+                    value={selectedKelas}
+                    onChange={(e) => setSelectedKelas(e.target.value)}
+                  >
+                    <option value="">Semua Kelas</option>
+                    {kelasList.map((k) => (
+                      <option key={k} value={k}>
+                        {k}
+                      </option>
+                    ))}
+                  </select>
+                )}
+                {isGWK && (
+                  <p className="text-xs text-muted-foreground">
+                    Guru Wali Kelas hanya bisa melihat rekap kelasnya sendiri.
+                  </p>
+                )}
+              </div>
             </div>
           </div>
         </CardContent>
