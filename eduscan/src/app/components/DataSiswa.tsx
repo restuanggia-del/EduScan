@@ -1,5 +1,14 @@
 import { useState, useEffect } from "react";
-import { Plus, Search, Edit, Trash2, Upload } from "lucide-react";
+import {
+  Plus,
+  Search,
+  Edit,
+  Trash2,
+  Upload,
+  ArrowLeft,
+  GraduationCap,
+  Users as UsersIcon,
+} from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
@@ -44,17 +53,39 @@ export function DataSiswa({
   const [uploading, setUploading] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [kelasList, setKelasList] = useState<
-    { id: string; namaKelas: string }[]
+    { id: string; namaKelas: string; tingkatKelas: string }[]
   >([]);
+  const [activeKelas, setActiveKelas] = useState<{
+    namaKelas: string;
+    tingkatKelas: string;
+  } | null>(null);
 
   const activeSearch = headerSearch || localSearch;
 
-  const filteredStudents = students.filter(
-    (student) =>
+  const filteredStudents = students.filter((student) => {
+    const matchSearch =
       student.nama.toLowerCase().includes(activeSearch.toLowerCase()) ||
       student.nisn.includes(activeSearch) ||
-      student.kelas.toLowerCase().includes(activeSearch.toLowerCase()),
-  );
+      student.kelas.toLowerCase().includes(activeSearch.toLowerCase());
+    const matchKelas = !activeKelas || student.kelas === activeKelas.namaKelas;
+    return matchSearch && matchKelas;
+  });
+
+  const tingkatOrder: Record<string, number> = { X: 1, XI: 2, XII: 3 };
+  const getTingkatPrefix = (tingkat: string) => {
+    const match = tingkat.trim().match(/^(XII|XI|X)/i);
+    return match ? match[1].toUpperCase() : tingkat;
+  };
+
+  const kelasGridSorted = [...kelasList].sort((a, b) => {
+    const orderA = tingkatOrder[getTingkatPrefix(a.tingkatKelas)] || 99;
+    const orderB = tingkatOrder[getTingkatPrefix(b.tingkatKelas)] || 99;
+    if (orderA !== orderB) return orderA - orderB;
+    return a.namaKelas.localeCompare(b.namaKelas);
+  });
+
+  const countSiswaByKelas = (namaKelas: string) =>
+    students.filter((s) => s.kelas === namaKelas).length;
 
   useEffect(() => {
     fetchStudents();
@@ -90,10 +121,16 @@ export function DataSiswa({
   const fetchKelasList = async () => {
     const { data } = await supabase
       .from("kelas")
-      .select("id, nama_kelas")
+      .select("id, nama_kelas, tingkat_kelas")
       .order("nama_kelas");
     if (data) {
-      setKelasList(data.map((k) => ({ id: k.id, namaKelas: k.nama_kelas })));
+      setKelasList(
+        data.map((k) => ({
+          id: k.id,
+          namaKelas: k.nama_kelas,
+          tingkatKelas: k.tingkat_kelas || "",
+        })),
+      );
     }
   };
 
@@ -206,17 +243,33 @@ export function DataSiswa({
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
+          {activeKelas ? (
+            <button
+              onClick={() => setActiveKelas(null)}
+              className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-2 cursor-pointer"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Kembali ke semua kelas
+            </button>
+          ) : null}
           <h2 className="text-2xl font-bold text-foreground">
-            Master Data Siswa
+            {activeKelas
+              ? `Siswa Kelas ${activeKelas.namaKelas}`
+              : "Master Data Siswa"}
           </h2>
           <p className="text-muted-foreground">
-            Kelola data siswa dan informasi orang tua
+            {activeKelas
+              ? `${countSiswaByKelas(activeKelas.namaKelas)} siswa di kelas ini`
+              : "Pilih kelas untuk melihat & kelola data siswa"}
           </p>
         </div>
 
         {!isGuru && (
           <button
-            onClick={() => setIsAddDialogOpen(true)}
+            onClick={() => {
+              if (activeKelas) setFormData({ kelas: activeKelas.namaKelas });
+              setIsAddDialogOpen(true);
+            }}
             className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm font-medium hover:bg-primary/90 cursor-pointer"
           >
             <Plus className="w-4 h-4" />
@@ -385,125 +438,166 @@ export function DataSiswa({
         </Dialog>
       </div>
 
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle>Daftar Siswa</CardTitle>
-            <div className="relative w-80">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground z-10" />
-
-              <Input
-                value={localSearch}
-                onChange={(e) => setLocalSearch(e.target.value)}
-                placeholder="Cari nama, NISN, atau kelas..."
-                className="pl-10"
-              />
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <div className="text-center py-12">
-              <p className="text-muted-foreground">Memuat data siswa...</p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-border">
-                    <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">
-                      Foto
-                    </th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">
-                      NISN
-                    </th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">
-                      Nama
-                    </th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">
-                      Kelas
-                    </th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">
-                      Orang Tua
-                    </th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">
-                      No. WhatsApp
-                    </th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">
-                      {isGuru ? "" : "Aksi"}
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredStudents.map((student) => (
-                    <tr
-                      key={student.id}
-                      className="border-b border-border last:border-0 hover:bg-muted/50"
-                    >
-                      <td className="py-3 px-4">
-                        {student.foto ? (
-                          <img
-                            src={student.foto}
-                            alt={student.nama}
-                            className="w-10 h-10 rounded-full object-cover"
-                          />
-                        ) : (
-                          <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center text-xs text-muted-foreground">
-                            {student.nama.charAt(0).toUpperCase()}
-                          </div>
-                        )}
-                      </td>
-                      <td className="py-3 px-4">{student.nisn}</td>
-                      <td className="py-3 px-4 font-medium">{student.nama}</td>
-                      <td className="py-3 px-4 text-muted-foreground">
-                        {student.kelas}
-                      </td>
-                      <td className="py-3 px-4 text-muted-foreground">
-                        {student.namaOrtu}
-                      </td>
-                      <td className="py-3 px-4 text-muted-foreground">
-                        {student.noWA}
-                      </td>
-                      <td className="py-3 px-4">
-                        {isGuru ? (
-                          <span className="text-xs text-muted-foreground px-2">
-                            Hanya lihat
-                          </span>
-                        ) : (
-                          <div className="flex items-center gap-2">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => openEditDialog(student)}
-                              className="cursor-pointer"
-                            >
-                              <Edit className="w-4 h-4" />
-                            </Button>
-                            <button
-                              onClick={() => setDeletingId(student.id)}
-                              className="p-2 rounded-md hover:bg-muted cursor-pointer"
-                            >
-                              <Trash2 className="w-4 h-4 text-destructive" />
-                            </button>
-                          </div>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-
-              {filteredStudents.length === 0 && (
-                <div className="text-center py-12">
-                  <p className="text-muted-foreground">
-                    Tidak ada data siswa ditemukan
-                  </p>
-                </div>
+      {!activeKelas ? (
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+          {kelasGridSorted.map((k) => (
+            <button
+              key={k.id}
+              onClick={() =>
+                setActiveKelas({
+                  namaKelas: k.namaKelas,
+                  tingkatKelas: k.tingkatKelas,
+                })
+              }
+              className="text-left bg-white border border-border rounded-lg p-4 hover:shadow-md hover:border-primary transition-all cursor-pointer group"
+            >
+              <div className="w-9 h-9 rounded-md bg-primary/10 text-primary flex items-center justify-center mb-3 group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+                <GraduationCap className="w-5 h-5" />
+              </div>
+              <p className="font-semibold text-sm leading-tight">
+                {k.namaKelas}
+              </p>
+              {k.tingkatKelas && (
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {k.tingkatKelas}
+                </p>
               )}
+              <div className="flex items-center gap-1 mt-3 text-xs text-muted-foreground">
+                <UsersIcon className="w-3.5 h-3.5" />
+                {countSiswaByKelas(k.namaKelas)} siswa
+              </div>
+            </button>
+          ))}
+
+          {kelasGridSorted.length === 0 && (
+            <div className="col-span-full text-center py-12 text-muted-foreground text-sm">
+              Belum ada data kelas. Tambahkan dulu lewat menu Manajemen Kelas.
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      ) : (
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle>Daftar Siswa</CardTitle>
+              <div className="relative w-80">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground z-10" />
+
+                <Input
+                  value={localSearch}
+                  onChange={(e) => setLocalSearch(e.target.value)}
+                  placeholder="Cari nama, NISN, atau kelas..."
+                  className="pl-10"
+                />
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {loading ? (
+              <div className="text-center py-12">
+                <p className="text-muted-foreground">Memuat data siswa...</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-border">
+                      <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">
+                        Foto
+                      </th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">
+                        NISN
+                      </th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">
+                        Nama
+                      </th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">
+                        Kelas
+                      </th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">
+                        Orang Tua
+                      </th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">
+                        No. WhatsApp
+                      </th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">
+                        {isGuru ? "" : "Aksi"}
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredStudents.map((student) => (
+                      <tr
+                        key={student.id}
+                        className="border-b border-border last:border-0 hover:bg-muted/50"
+                      >
+                        <td className="py-3 px-4">
+                          {student.foto ? (
+                            <img
+                              src={student.foto}
+                              alt={student.nama}
+                              className="w-10 h-10 rounded-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center text-xs text-muted-foreground">
+                              {student.nama.charAt(0).toUpperCase()}
+                            </div>
+                          )}
+                        </td>
+                        <td className="py-3 px-4">{student.nisn}</td>
+                        <td className="py-3 px-4 font-medium">
+                          {student.nama}
+                        </td>
+                        <td className="py-3 px-4 text-muted-foreground">
+                          {student.kelas}
+                        </td>
+                        <td className="py-3 px-4 text-muted-foreground">
+                          {student.namaOrtu}
+                        </td>
+                        <td className="py-3 px-4 text-muted-foreground">
+                          {student.noWA}
+                        </td>
+                        <td className="py-3 px-4">
+                          {isGuru ? (
+                            <span className="text-xs text-muted-foreground px-2">
+                              Hanya lihat
+                            </span>
+                          ) : (
+                            <div className="flex items-center gap-2">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => openEditDialog(student)}
+                                className="cursor-pointer"
+                              >
+                                <Edit className="w-4 h-4" />
+                              </Button>
+                              <button
+                                onClick={() => setDeletingId(student.id)}
+                                className="p-2 rounded-md hover:bg-muted cursor-pointer"
+                              >
+                                <Trash2 className="w-4 h-4 text-destructive" />
+                              </button>
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+
+                {filteredStudents.length === 0 && (
+                  <div className="text-center py-12">
+                    <p className="text-muted-foreground">
+                      Tidak ada data siswa ditemukan
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
       <Dialog
         open={deletingId !== null}
         onOpenChange={() => setDeletingId(null)}
