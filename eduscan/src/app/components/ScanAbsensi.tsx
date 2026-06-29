@@ -2,7 +2,7 @@ import { useState } from "react";
 import { cn } from "./ui/utils";
 import { useAuth } from "../../lib/AuthContext";
 import { ScanGuru } from "./ScanGuru";
-import { ScanSiswa } from "./Scansiswa";
+import { ScanSiswa } from "./ScanSiswa";
 
 export function ScanAbsensi() {
   const { user } = useAuth();
