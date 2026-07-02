@@ -30,10 +30,17 @@ interface Student {
   nama: string;
   nisn: string;
   kelas: string;
+  kelasId: string | null;
   alamat: string;
   namaOrtu: string;
   noWA: string;
   foto?: string;
+}
+
+interface KelasItem {
+  id: string;
+  namaKelas: string;
+  tingkatKelas: string;
 }
 
 export function DataSiswa({
@@ -41,24 +48,27 @@ export function DataSiswa({
 }: {
   searchQuery?: string;
 }) {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const isGuru = user?.role === "guru_wali_kelas";
   const [localSearch, setLocalSearch] = useState("");
   const [students, setStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(true);
+  const [initializing, setInitializing] = useState(true);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
   const [formData, setFormData] = useState<Partial<Student>>({});
   const [errorMsg, setErrorMsg] = useState("");
   const [uploading, setUploading] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [kelasList, setKelasList] = useState<
-    { id: string; namaKelas: string; tingkatKelas: string }[]
-  >([]);
+  const [kelasList, setKelasList] = useState<KelasItem[]>([]);
   const [activeKelas, setActiveKelas] = useState<{
     namaKelas: string;
     tingkatKelas: string;
   } | null>(null);
+
+  const [guruKelasId, setGuruKelasId] = useState<string | null | undefined>(
+    undefined,
+  );
 
   const activeSearch = headerSearch || localSearch;
 
@@ -87,20 +97,57 @@ export function DataSiswa({
   const countSiswaByKelas = (namaKelas: string) =>
     students.filter((s) => s.kelas === namaKelas).length;
 
-  useEffect(() => {
-    fetchStudents();
-    fetchKelasList();
-  }, []);
+  const fetchKelasList = async (): Promise<KelasItem[]> => {
+    const { data } = await supabase
+      .from("kelas")
+      .select("id, nama_kelas, tingkat_kelas")
+      .order("nama_kelas");
+    const mapped = (data || []).map((k) => ({
+      id: k.id,
+      namaKelas: k.nama_kelas,
+      tingkatKelas: k.tingkat_kelas || "",
+    }));
+    setKelasList(mapped);
+    return mapped;
+  };
 
-  const fetchStudents = async () => {
-    setLoading(true);
+  const fetchGuruKelasId = async (): Promise<string | null> => {
+    if (!user) return null;
     const { data, error } = await supabase
-      .from("siswa")
-      .select("*")
-      .order("nama", { ascending: true });
+      .from("guru")
+      .select("kelas_id")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (error) {
+      toast.error("Gagal memuat data kelas guru: " + error.message);
+      return null;
+    }
+    return data?.kelas_id ?? null;
+  };
+
+  const fetchStudents = async (guruKelasIdArg?: string | null) => {
+    setLoading(true);
+
+    if (isGuru && !guruKelasIdArg) {
+      setStudents([]);
+      setLoading(false);
+      return;
+    }
+
+    let query = supabase.from("siswa").select("*").order("nama", {
+      ascending: true,
+    });
+
+    if (isGuru && guruKelasIdArg) {
+      query = query.eq("kelas_id", guruKelasIdArg);
+    }
+
+    const { data, error } = await query;
 
     if (error) {
       console.error("Error fetching siswa:", error.message);
+      toast.error("Gagal memuat data siswa: " + error.message);
     } else if (data) {
       setStudents(
         data.map((s) => ({
@@ -108,6 +155,7 @@ export function DataSiswa({
           nama: s.nama,
           nisn: s.nisn,
           kelas: s.kelas,
+          kelasId: s.kelas_id || null,
           alamat: s.alamat || "",
           namaOrtu: s.nama_ortu || "",
           noWA: s.no_wa || "",
@@ -118,29 +166,48 @@ export function DataSiswa({
     setLoading(false);
   };
 
-  const fetchKelasList = async () => {
-    const { data } = await supabase
-      .from("kelas")
-      .select("id, nama_kelas, tingkat_kelas")
-      .order("nama_kelas");
-    if (data) {
-      setKelasList(
-        data.map((k) => ({
-          id: k.id,
-          namaKelas: k.nama_kelas,
-          tingkatKelas: k.tingkat_kelas || "",
-        })),
-      );
-    }
-  };
+  useEffect(() => {
+    if (authLoading) return;
+
+    const init = async () => {
+      setInitializing(true);
+      const kelasListData = await fetchKelasList();
+
+      if (isGuru) {
+        const kelasId = await fetchGuruKelasId();
+        setGuruKelasId(kelasId);
+
+        if (kelasId) {
+          const own = kelasListData.find((k) => k.id === kelasId);
+          if (own) {
+            setActiveKelas({
+              namaKelas: own.namaKelas,
+              tingkatKelas: own.tingkatKelas,
+            });
+          }
+        }
+        await fetchStudents(kelasId);
+      } else {
+        await fetchStudents(undefined);
+      }
+      setInitializing(false);
+    };
+
+    init();
+  }, [authLoading, isGuru, user?.id]);
 
   const handleAddStudent = async () => {
     setErrorMsg("");
+    if (!formData.kelasId) {
+      setErrorMsg("Kelas wajib dipilih dari daftar.");
+      return;
+    }
     if (formData.nama && formData.nisn && formData.kelas) {
       const { error } = await supabase.from("siswa").insert({
         nama: formData.nama,
         nisn: formData.nisn,
         kelas: formData.kelas,
+        kelas_id: formData.kelasId,
         alamat: formData.alamat || "",
         nama_ortu: formData.namaOrtu || "",
         no_wa: formData.noWA || "",
@@ -154,7 +221,7 @@ export function DataSiswa({
           setErrorMsg("Gagal menambah siswa: " + error.message);
         }
       } else {
-        await fetchStudents();
+        await fetchStudents(isGuru ? (guruKelasId ?? undefined) : undefined);
         setFormData({});
         setIsAddDialogOpen(false);
         toast.success("Siswa berhasil ditambahkan!");
@@ -164,6 +231,10 @@ export function DataSiswa({
 
   const handleEditStudent = async () => {
     setErrorMsg("");
+    if (!formData.kelasId) {
+      setErrorMsg("Kelas wajib dipilih dari daftar.");
+      return;
+    }
     if (editingStudent && formData.nama && formData.nisn && formData.kelas) {
       const { error } = await supabase
         .from("siswa")
@@ -171,6 +242,7 @@ export function DataSiswa({
           nama: formData.nama,
           nisn: formData.nisn,
           kelas: formData.kelas,
+          kelas_id: formData.kelasId,
           alamat: formData.alamat || "",
           nama_ortu: formData.namaOrtu || "",
           no_wa: formData.noWA || "",
@@ -181,7 +253,7 @@ export function DataSiswa({
       if (error) {
         setErrorMsg("Gagal mengupdate siswa: " + error.message);
       } else {
-        await fetchStudents();
+        await fetchStudents(isGuru ? (guruKelasId ?? undefined) : undefined);
         setEditingStudent(null);
         setFormData({});
         toast.success("Data siswa berhasil diperbarui!");
@@ -198,7 +270,7 @@ export function DataSiswa({
     if (error) {
       toast.error("Gagal menghapus siswa: " + error.message);
     } else {
-      await fetchStudents();
+      await fetchStudents(isGuru ? (guruKelasId ?? undefined) : undefined);
       toast.success("Siswa berhasil dihapus!");
     }
     setDeletingId(null);
@@ -239,11 +311,38 @@ export function DataSiswa({
     setErrorMsg("");
   };
 
+  const showBackButton = !!activeKelas && !isGuru;
+  const showKelasGrid = !activeKelas && !isGuru;
+
+  if (initializing) {
+    return (
+      <div className="p-6">
+        <p className="text-muted-foreground text-sm text-center py-12">
+          Memuat data...
+        </p>
+      </div>
+    );
+  }
+
+  if (isGuru && !guruKelasId) {
+    return (
+      <div className="p-6">
+        <div className="text-center py-12 space-y-2">
+          <h2 className="text-xl font-semibold">Belum Ada Kelas</h2>
+          <p className="text-muted-foreground text-sm">
+            Akun Anda belum di-assign sebagai wali kelas untuk kelas manapun.
+            Silakan hubungi Kepala Sekolah/TU untuk mengatur kelas Anda.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          {activeKelas ? (
+          {showBackButton ? (
             <button
               onClick={() => setActiveKelas(null)}
               className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-2 cursor-pointer"
@@ -267,7 +366,15 @@ export function DataSiswa({
         {!isGuru && (
           <button
             onClick={() => {
-              if (activeKelas) setFormData({ kelas: activeKelas.namaKelas });
+              if (activeKelas) {
+                const match = kelasList.find(
+                  (k) => k.namaKelas === activeKelas.namaKelas,
+                );
+                setFormData({
+                  kelas: activeKelas.namaKelas,
+                  kelasId: match ? match.id : null,
+                });
+              }
               setIsAddDialogOpen(true);
             }}
             className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm font-medium hover:bg-primary/90 cursor-pointer"
@@ -356,14 +463,21 @@ export function DataSiswa({
                 <Label htmlFor="kelas">Kelas *</Label>
                 <select
                   className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm"
-                  value={formData.kelas || ""}
-                  onChange={(e) =>
-                    setFormData({ ...formData, kelas: e.target.value })
-                  }
+                  value={formData.kelasId || ""}
+                  onChange={(e) => {
+                    const selected = kelasList.find(
+                      (k) => k.id === e.target.value,
+                    );
+                    setFormData({
+                      ...formData,
+                      kelasId: e.target.value || null,
+                      kelas: selected ? selected.namaKelas : "",
+                    });
+                  }}
                 >
                   <option value="">Pilih Kelas</option>
                   {kelasList.map((k) => (
-                    <option key={k.id} value={k.namaKelas}>
+                    <option key={k.id} value={k.id}>
                       {k.namaKelas}
                     </option>
                   ))}
@@ -438,7 +552,7 @@ export function DataSiswa({
         </Dialog>
       </div>
 
-      {!activeKelas ? (
+      {showKelasGrid ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
           {kelasGridSorted.map((k) => (
             <button
