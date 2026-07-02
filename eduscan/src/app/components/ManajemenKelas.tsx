@@ -19,6 +19,7 @@ interface Kelas {
   namaKelas: string;
   tingkatKelas: string;
   waliKelas: string;
+  waliKelasGuruId: string | null;
   jumlahSiswa: number;
 }
 
@@ -39,11 +40,12 @@ export function ManajemenKelas() {
     setLoading(true);
     const { data: kelasData, error } = await supabase
       .from("kelas")
-      .select("*")
+      .select("*, guru:wali_kelas_guru_id(nama)")
       .order("nama_kelas", { ascending: true });
 
     if (error) {
       console.error("Error fetching kelas:", error.message);
+      toast.error("Gagal memuat data kelas: " + error.message);
       setLoading(false);
       return;
     }
@@ -52,11 +54,12 @@ export function ManajemenKelas() {
 
     if (kelasData) {
       setKelasList(
-        kelasData.map((k) => ({
+        (kelasData as any[]).map((k) => ({
           id: k.id,
           namaKelas: k.nama_kelas,
           tingkatKelas: k.tingkat_kelas,
-          waliKelas: k.wali_kelas,
+          waliKelas: k.guru?.nama || k.wali_kelas || "Belum ada wali kelas",
+          waliKelasGuruId: k.wali_kelas_guru_id,
           jumlahSiswa:
             siswaData?.filter((s) => s.kelas === k.nama_kelas).length || 0,
         })),
@@ -67,11 +70,11 @@ export function ManajemenKelas() {
 
   const handleAddKelas = async () => {
     setErrorMsg("");
-    if (formData.namaKelas && formData.tingkatKelas && formData.waliKelas) {
+    if (formData.namaKelas && formData.tingkatKelas) {
       const { error } = await supabase.from("kelas").insert({
         nama_kelas: formData.namaKelas,
         tingkat_kelas: formData.tingkatKelas,
-        wali_kelas: formData.waliKelas,
+        wali_kelas: "-",
       });
 
       if (error) {
@@ -80,25 +83,23 @@ export function ManajemenKelas() {
         await fetchKelas();
         setFormData({});
         setIsAddDialogOpen(false);
-        toast.success("Kelas berhasil ditambahkan!");
+        toast.success(
+          "Kelas berhasil ditambahkan! Assign wali kelas lewat halaman Data Guru.",
+        );
       }
+    } else {
+      setErrorMsg("Nama kelas dan tingkat kelas wajib diisi.");
     }
   };
 
   const handleEditKelas = async () => {
     setErrorMsg("");
-    if (
-      editingKelas &&
-      formData.namaKelas &&
-      formData.tingkatKelas &&
-      formData.waliKelas
-    ) {
+    if (editingKelas && formData.namaKelas && formData.tingkatKelas) {
       const { error } = await supabase
         .from("kelas")
         .update({
           nama_kelas: formData.namaKelas,
           tingkat_kelas: formData.tingkatKelas,
-          wali_kelas: formData.waliKelas,
         })
         .eq("id", editingKelas.id);
 
@@ -110,6 +111,8 @@ export function ManajemenKelas() {
         setFormData({});
         toast.success("Data kelas berhasil diperbarui!");
       }
+    } else {
+      setErrorMsg("Nama kelas dan tingkat kelas wajib diisi.");
     }
   };
 
@@ -161,7 +164,7 @@ export function ManajemenKelas() {
             Manajemen Kelas
           </h2>
           <p className="text-muted-foreground">
-            Kelola data kelas dan wali kelas
+            Kelola data kelas. Wali kelas ditentukan lewat halaman Data Guru.
           </p>
         </div>
         <button
@@ -184,8 +187,8 @@ export function ManajemenKelas() {
             </DialogTitle>
             <DialogDescription>
               {editingKelas
-                ? "Ubah data kelas yang dipilih."
-                : "Isi form berikut untuk menambah kelas baru."}
+                ? "Ubah nama atau tingkat kelas. Wali kelas diatur lewat halaman Data Guru."
+                : "Isi nama dan tingkat kelas. Setelah kelas dibuat, assign wali kelas lewat halaman Data Guru."}
             </DialogDescription>
           </DialogHeader>
 
@@ -221,15 +224,15 @@ export function ManajemenKelas() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="waliKelas">Wali Kelas *</Label>
-              <Input
-                id="waliKelas"
-                value={formData.waliKelas || ""}
-                onChange={(e) =>
-                  setFormData({ ...formData, waliKelas: e.target.value })
-                }
-                placeholder="Masukkan nama wali kelas"
-              />
+              <Label>Wali Kelas</Label>
+              <div className="text-sm bg-muted rounded-md px-3 py-2 text-muted-foreground">
+                {editingKelas ? editingKelas.waliKelas : "Belum ada wali kelas"}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Untuk mengatur atau mengganti wali kelas, buka halaman{" "}
+                <span className="font-medium">Data Guru</span> dan pilih kelas
+                ini pada guru dengan role Wali Kelas.
+              </p>
             </div>
 
             <div className="flex justify-end gap-2 pt-4 border-t">
@@ -327,7 +330,15 @@ export function ManajemenKelas() {
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Wali Kelas</p>
-                  <p className="font-medium">{kelas.waliKelas}</p>
+                  <p
+                    className={
+                      kelas.waliKelasGuruId
+                        ? "font-medium"
+                        : "font-medium text-muted-foreground italic"
+                    }
+                  >
+                    {kelas.waliKelas}
+                  </p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Jumlah Siswa</p>
