@@ -68,6 +68,7 @@ export function DataGuru() {
   const [editingGuru, setEditingGuru] = useState<Guru | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [loadingJadwal, setLoadingJadwal] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
 
   const [formData, setFormData] = useState({
@@ -154,7 +155,7 @@ export function DataGuru() {
     setIsAddDialogOpen(true);
   };
 
-  const handleOpenEdit = (guru: Guru) => {
+  const handleOpenEdit = async (guru: Guru) => {
     setEditingGuru(guru);
     setFormData({
       nama: guru.nama,
@@ -164,7 +165,34 @@ export function DataGuru() {
       role_guru: guru.role_guru,
       kelas_id: guru.kelas_id || "",
     });
+
+    setLoadingJadwal(true);
     setIsAddDialogOpen(true);
+
+    const { data: jadwalData, error } = await supabase
+      .from("jadwal_guru")
+      .select("hari, jam_masuk, jam_pulang")
+      .eq("guru_id", guru.id);
+
+    if (error) {
+      toast.error("Gagal memuat jadwal mengajar: " + error.message);
+      setJadwalForm(defaultJadwalForm());
+      setLoadingJadwal(false);
+      return;
+    }
+
+    const newJadwalForm = defaultJadwalForm();
+    (jadwalData || []).forEach((j) => {
+      if (newJadwalForm[j.hari]) {
+        newJadwalForm[j.hari] = {
+          aktif: true,
+          jam_masuk: j.jam_masuk,
+          jam_pulang: j.jam_pulang || "14:00",
+        };
+      }
+    });
+    setJadwalForm(newJadwalForm);
+    setLoadingJadwal(false);
   };
 
   const jadwalToArray = () =>
@@ -526,55 +554,61 @@ export function DataGuru() {
             <div className="space-y-2">
               <Label>Jadwal Mengajar (Senin–Jumat)</Label>
               <div className="space-y-2 border rounded-md p-3">
-                {HARI_LIST.map((h) => (
-                  <div key={h.key} className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      checked={jadwalForm[h.key].aktif}
-                      onChange={(e) =>
-                        setJadwalForm({
-                          ...jadwalForm,
-                          [h.key]: {
-                            ...jadwalForm[h.key],
-                            aktif: e.target.checked,
-                          },
-                        })
-                      }
-                    />
-                    <span className="w-16 text-sm">{h.label}</span>
-                    <Input
-                      type="time"
-                      className="h-8 w-28"
-                      disabled={!jadwalForm[h.key].aktif}
-                      value={jadwalForm[h.key].jam_masuk}
-                      onChange={(e) =>
-                        setJadwalForm({
-                          ...jadwalForm,
-                          [h.key]: {
-                            ...jadwalForm[h.key],
-                            jam_masuk: e.target.value,
-                          },
-                        })
-                      }
-                    />
-                    <span className="text-xs text-muted-foreground">s/d</span>
-                    <Input
-                      type="time"
-                      className="h-8 w-28"
-                      disabled={!jadwalForm[h.key].aktif}
-                      value={jadwalForm[h.key].jam_pulang}
-                      onChange={(e) =>
-                        setJadwalForm({
-                          ...jadwalForm,
-                          [h.key]: {
-                            ...jadwalForm[h.key],
-                            jam_pulang: e.target.value,
-                          },
-                        })
-                      }
-                    />
-                  </div>
-                ))}
+                {loadingJadwal ? (
+                  <p className="text-xs text-muted-foreground py-2 text-center">
+                    Memuat jadwal...
+                  </p>
+                ) : (
+                  HARI_LIST.map((h) => (
+                    <div key={h.key} className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={jadwalForm[h.key].aktif}
+                        onChange={(e) =>
+                          setJadwalForm({
+                            ...jadwalForm,
+                            [h.key]: {
+                              ...jadwalForm[h.key],
+                              aktif: e.target.checked,
+                            },
+                          })
+                        }
+                      />
+                      <span className="w-16 text-sm">{h.label}</span>
+                      <Input
+                        type="time"
+                        className="h-8 w-28"
+                        disabled={!jadwalForm[h.key].aktif}
+                        value={jadwalForm[h.key].jam_masuk}
+                        onChange={(e) =>
+                          setJadwalForm({
+                            ...jadwalForm,
+                            [h.key]: {
+                              ...jadwalForm[h.key],
+                              jam_masuk: e.target.value,
+                            },
+                          })
+                        }
+                      />
+                      <span className="text-xs text-muted-foreground">s/d</span>
+                      <Input
+                        type="time"
+                        className="h-8 w-28"
+                        disabled={!jadwalForm[h.key].aktif}
+                        value={jadwalForm[h.key].jam_pulang}
+                        onChange={(e) =>
+                          setJadwalForm({
+                            ...jadwalForm,
+                            [h.key]: {
+                              ...jadwalForm[h.key],
+                              jam_pulang: e.target.value,
+                            },
+                          })
+                        }
+                      />
+                    </div>
+                  ))
+                )}
               </div>
               <p className="text-xs text-muted-foreground">
                 Jadwal ini dipakai untuk menentukan status Hadir/Terlambat
@@ -586,7 +620,7 @@ export function DataGuru() {
 
             <Button
               onClick={handleSubmit}
-              disabled={submitting}
+              disabled={submitting || loadingJadwal}
               className="w-full cursor-pointer"
             >
               {submitting
