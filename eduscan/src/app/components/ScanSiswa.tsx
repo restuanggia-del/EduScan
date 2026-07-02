@@ -235,7 +235,7 @@ export function ScanSiswa() {
 
   const handleManualAbsensi = async (
     siswa: Siswa,
-    status: "izin" | "sakit" | "alfa",
+    status: "hadir" | "izin" | "sakit" | "alfa",
   ) => {
     setManualLoading(true);
     const today = new Date().toISOString().split("T")[0];
@@ -257,13 +257,18 @@ export function ScanSiswa() {
       siswa_id: siswa.id,
       tanggal: today,
       status,
-      keterangan: status,
+      keterangan:
+        status === "hadir" ? "Input manual - kartu ketinggalan" : status,
     });
 
     if (error) {
       toast.error("Gagal mencatat absensi: " + error.message);
     } else {
-      toast.success(`${siswa.nama} dicatat ${status.toUpperCase()}!`);
+      toast.success(
+        status === "hadir"
+          ? `${siswa.nama} dicatat HADIR (input manual)!`
+          : `${siswa.nama} dicatat ${status.toUpperCase()}!`,
+      );
       playSuccessSound();
 
       const { data: settingsData } = await supabase
@@ -292,7 +297,7 @@ export function ScanSiswa() {
           siswa.no_wa,
           siswa.nama,
           getCurrentTime(),
-          status,
+          status === "hadir" ? "masuk" : status,
           settingsData.nama_sekolah,
           settingsData.whatsapp_token,
           {
@@ -608,7 +613,7 @@ export function ScanSiswa() {
               )}
             >
               <UserX className="w-4 h-4 inline mr-1" />
-              Input Manual (Izin/Sakit/Alfa)
+              Input Manual (Hadir/Izin/Sakit/Alfa)
             </button>
           </div>
 
@@ -696,7 +701,7 @@ export function ScanSiswa() {
           {showManual && (
             <Card>
               <CardHeader>
-                <CardTitle>Input Manual Ketidakhadiran</CardTitle>
+                <CardTitle>Input Manual Kehadiran</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="relative">
@@ -755,6 +760,15 @@ export function ScanSiswa() {
                             </span>
                           ) : (
                             <>
+                              <button
+                                onClick={() =>
+                                  handleManualAbsensi(siswa, "hadir")
+                                }
+                                disabled={manualLoading}
+                                className="px-2.5 py-1 rounded-md bg-primary/10 text-primary text-xs font-medium hover:bg-primary/20 transition-colors cursor-pointer"
+                              >
+                                Hadir
+                              </button>
                               <button
                                 onClick={() =>
                                   handleManualAbsensi(siswa, "izin")
