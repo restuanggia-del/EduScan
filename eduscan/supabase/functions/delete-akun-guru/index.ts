@@ -58,10 +58,17 @@ Deno.serve(async (req) => {
             .from("guru")
             .select("id, user_id")
             .eq("id", guru_id)
-            .single();
+            .maybeSingle();
 
         if (getGuruError) {
             throw new Error("STEP get_guru: " + JSON.stringify(getGuruError));
+        }
+
+        if (!guruData) {
+            return new Response(
+                JSON.stringify({ success: true, akun_dihapus: false, note: "Guru sudah tidak ada di database." }),
+                { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+            );
         }
 
         const { error: clearKelasError } = await supabaseAdmin
