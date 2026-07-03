@@ -10,7 +10,8 @@ import { ScanAbsensi } from "./components/ScanAbsensi";
 import { Pengaturan } from "./components/Pengaturan";
 import { Toaster } from "sonner";
 import { RekapAbsensi } from "./components/RekapAbsensi";
-import { useAuth } from "../lib/AuthContext";
+import { AbsenSaya } from "./components/AbsenSaya";
+import { useAuth, getEffectiveRole } from "../lib/AuthContext";
 import { Login } from "./components/Login";
 
 export default function App() {
@@ -29,19 +30,23 @@ export default function App() {
   if (!user) return <Login />;
 
   const renderPage = () => {
-    const role = user?.role;
+    const effectiveRole = getEffectiveRole(user);
 
     const restricted: Record<string, string[]> = {
       kelas: ["kepala_sekolah", "tu"],
       guru: ["kepala_sekolah", "tu"],
       qr: ["kepala_sekolah", "tu"],
       pengaturan: ["kepala_sekolah"],
+      siswa: ["kepala_sekolah", "tu", "guru_wali_kelas"],
+      scan: ["kepala_sekolah", "tu", "guru_wali_kelas"],
+      rekap: ["kepala_sekolah", "tu", "guru_wali_kelas"],
+      "absen-saya": ["guru_biasa", "guru_wali_kelas"],
     };
 
     if (
       restricted[currentPage] &&
-      role &&
-      !restricted[currentPage].includes(role)
+      effectiveRole &&
+      !restricted[currentPage].includes(effectiveRole)
     ) {
       return (
         <div className="flex flex-col items-center justify-center h-full gap-4">
@@ -77,6 +82,8 @@ export default function App() {
         return <RekapAbsensi />;
       case "pengaturan":
         return <Pengaturan />;
+      case "absen-saya":
+        return <AbsenSaya />;
       default:
         return <Dashboard />;
     }

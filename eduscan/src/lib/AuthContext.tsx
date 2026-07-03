@@ -6,6 +6,7 @@ interface UserProfile {
   nama: string;
   email: string;
   role: "kepala_sekolah" | "tu" | "guru";
+  role_guru?: "biasa" | "wali_kelas" | null;
 }
 
 interface AuthContextType {
@@ -64,7 +65,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .eq("id", userId)
       .single();
 
-    if (data) setUser(data);
+    if (data) {
+      if (data.role === "guru") {
+        const { data: guruData } = await supabase
+          .from("guru")
+          .select("role_guru")
+          .eq("user_id", userId)
+          .maybeSingle();
+
+        setUser({ ...data, role_guru: guruData?.role_guru ?? null });
+      } else {
+        setUser(data);
+      }
+    }
     setLoading(false);
   };
 
@@ -91,3 +104,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 }
 
 export const useAuth = () => useContext(AuthContext);
+
+export function getEffectiveRole(user: UserProfile | null): string | null {
+  if (!user) return null;
+  if (user.role === "guru") {
+    return user.role_guru === "wali_kelas" ? "guru_wali_kelas" : "guru_biasa";
+  }
+  return user.role;
+}

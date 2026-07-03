@@ -6,9 +6,10 @@ import {
   Settings,
   BarChart3,
   Scan,
+  Clock,
 } from "lucide-react";
 import { cn } from "./ui/utils";
-import { useAuth } from "../../lib/AuthContext";
+import { useAuth, getEffectiveRole } from "../../lib/AuthContext";
 
 interface SidebarProps {
   currentPage: string;
@@ -20,7 +21,13 @@ const allMenuItems = [
     id: "dashboard",
     label: "Dashboard",
     icon: Home,
-    roles: ["kepala_sekolah", "tu", "guru"],
+    roles: ["kepala_sekolah", "tu", "guru_biasa", "guru_wali_kelas"],
+  },
+  {
+    id: "absen-saya",
+    label: "Absen Saya",
+    icon: Clock,
+    roles: ["guru_biasa", "guru_wali_kelas"],
   },
   {
     id: "kelas",
@@ -32,7 +39,7 @@ const allMenuItems = [
     id: "siswa",
     label: "Data Siswa",
     icon: Users,
-    roles: ["kepala_sekolah", "tu", "guru"],
+    roles: ["kepala_sekolah", "tu", "guru_wali_kelas"],
   },
   {
     id: "guru",
@@ -50,13 +57,13 @@ const allMenuItems = [
     id: "scan",
     label: "Scan Absensi",
     icon: Scan,
-    roles: ["kepala_sekolah", "tu", "guru"],
+    roles: ["kepala_sekolah", "tu", "guru_wali_kelas"],
   },
   {
     id: "rekap",
     label: "Rekap Absensi",
     icon: FileText,
-    roles: ["kepala_sekolah", "tu", "guru"],
+    roles: ["kepala_sekolah", "tu", "guru_wali_kelas"],
   },
   {
     id: "pengaturan",
@@ -68,9 +75,10 @@ const allMenuItems = [
 
 export function Sidebar({ currentPage, onNavigate }: SidebarProps) {
   const { user } = useAuth();
+  const effectiveRole = getEffectiveRole(user); // <-- BARU
 
   const menuItems = allMenuItems.filter(
-    (item) => user?.role && item.roles.includes(user.role),
+    (item) => effectiveRole && item.roles.includes(effectiveRole),
   );
 
   return (
