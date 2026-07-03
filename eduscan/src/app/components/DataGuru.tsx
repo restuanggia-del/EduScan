@@ -129,7 +129,7 @@ export function DataGuru() {
 
     const merged = (guruData || []).map((g) => ({
       ...g,
-      email: g.user_id ? emailMap[g.user_id] : null,
+      email: g.user_id ? emailMap[g.user_id] : g.email || null,
     }));
 
     setGuruList(merged);

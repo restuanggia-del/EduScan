@@ -1,8 +1,17 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
+const corsHeaders = {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
+
 const HARI_MAP = ["minggu", "senin", "selasa", "rabu", "kamis", "jumat", "sabtu"];
 
 Deno.serve(async (req) => {
+    if (req.method === "OPTIONS") {
+        return new Response("ok", { headers: corsHeaders });
+    }
+
     const authHeader = req.headers.get("Authorization")!;
     const supabase = createClient(
         Deno.env.get("SUPABASE_URL")!,
@@ -11,7 +20,12 @@ Deno.serve(async (req) => {
     );
 
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
+    if (!user) {
+        return new Response(JSON.stringify({ error: "Unauthorized" }), {
+            status: 401,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+    }
 
     const { tipe } = await req.json();
 
@@ -20,13 +34,21 @@ Deno.serve(async (req) => {
         .select("id")
         .eq("user_id", user.id)
         .single();
-    if (guruErr || !guru) return new Response(JSON.stringify({ error: "Data guru tidak ditemukan" }), { status: 404 });
+    if (guruErr || !guru) {
+        return new Response(JSON.stringify({ error: "Data guru tidak ditemukan" }), {
+            status: 404,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+    }
 
     const now = new Date();
     const hariIni = HARI_MAP[now.getDay()];
 
     if (hariIni === "minggu" || hariIni === "sabtu") {
-        return new Response(JSON.stringify({ error: "Bukan hari sekolah" }), { status: 400 });
+        return new Response(JSON.stringify({ error: "Bukan hari sekolah" }), {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
     }
 
     let status: string;
@@ -40,7 +62,10 @@ Deno.serve(async (req) => {
             .maybeSingle();
 
         if (!jadwal) {
-            return new Response(JSON.stringify({ error: "Tidak ada jadwal mengajar hari ini" }), { status: 400 });
+            return new Response(JSON.stringify({ error: "Tidak ada jadwal mengajar hari ini" }), {
+                status: 400,
+                headers: { ...corsHeaders, "Content-Type": "application/json" },
+            });
         }
 
         const jamSekarang = now.toTimeString().slice(0, 8);
@@ -48,7 +73,10 @@ Deno.serve(async (req) => {
     } else if (tipe === "pulang") {
         status = "pulang";
     } else {
-        return new Response(JSON.stringify({ error: "tipe tidak valid" }), { status: 400 });
+        return new Response(JSON.stringify({ error: "tipe tidak valid" }), {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
     }
 
     const today = now.toISOString().slice(0, 10);
@@ -61,7 +89,10 @@ Deno.serve(async (req) => {
         .maybeSingle();
 
     if (existing) {
-        return new Response(JSON.stringify({ error: `Sudah absen ${tipe} hari ini` }), { status: 409 });
+        return new Response(JSON.stringify({ error: `Sudah absen ${tipe} hari ini` }), {
+            status: 409,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
     }
 
     const { data: inserted, error: insertErr } = await supabase
@@ -76,7 +107,14 @@ Deno.serve(async (req) => {
         .select()
         .single();
 
-    if (insertErr) return new Response(JSON.stringify({ error: insertErr.message }), { status: 500 });
+    if (insertErr) {
+        return new Response(JSON.stringify({ error: insertErr.message }), {
+            status: 500,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+    }
 
-    return new Response(JSON.stringify({ success: true, status, data: inserted }), { status: 200 });
+    return new Response(JSON.stringify({ success: true, status, data: inserted }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
 });

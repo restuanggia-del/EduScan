@@ -50,7 +50,6 @@ Deno.serve(async (req) => {
                     { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } },
                 );
             }
-
             if (guruExisting.user_id) {
                 return new Response(
                     JSON.stringify({ error: "Guru ini sudah punya akun" }),
@@ -82,7 +81,7 @@ Deno.serve(async (req) => {
                 throw new Error("STEP create_auth_user_existing: " + JSON.stringify(authError));
             }
             if (!authData?.user) {
-                throw new Error("STEP create_auth_user_existing: authData.user kosong, tidak ada error tapi user tidak terbuat");
+                throw new Error("STEP create_auth_user_existing: authData.user kosong");
             }
 
             const userId = authData.user.id;
@@ -116,46 +115,6 @@ Deno.serve(async (req) => {
                 JSON.stringify({ error: "kelas_id wajib diisi untuk Guru Wali Kelas" }),
                 { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
             );
-        }
-
-        if (role_guru === "biasa") {
-            const { data: guruData, error: guruError } = await supabaseAdmin
-                .from("guru")
-                .insert({
-                    nama,
-                    nip,
-                    mata_pelajaran,
-                    role_guru: "biasa",
-                    no_wa,
-                    foto_url,
-                })
-                .select()
-                .single();
-
-            if (guruError) throw guruError;
-
-            if (Array.isArray(jadwal) && jadwal.length > 0) {
-                const jadwalRows = jadwal
-                    .filter((j: any) => j.hari && j.jam_masuk)
-                    .map((j: any) => ({
-                        guru_id: guruData.id,
-                        hari: j.hari,
-                        jam_masuk: j.jam_masuk,
-                        jam_pulang: j.jam_pulang || null,
-                    }));
-                if (jadwalRows.length > 0) {
-                    const { error: jadwalError } = await supabaseAdmin
-                        .from("jadwal_guru")
-                        .insert(jadwalRows);
-                    if (jadwalError) {
-                        throw new Error("STEP insert_jadwal_biasa: " + JSON.stringify(jadwalError));
-                    }
-                }
-            }
-
-            return new Response(JSON.stringify({ success: true, guru: guruData }), {
-                headers: { ...corsHeaders, "Content-Type": "application/json" },
-            });
         }
 
         if (!nip) {
@@ -197,11 +156,12 @@ Deno.serve(async (req) => {
                 nama,
                 nip,
                 mata_pelajaran,
-                role_guru: "wali_kelas",
-                kelas_id,
+                role_guru,
+                kelas_id: role_guru === "wali_kelas" ? kelas_id : null,
                 user_id: userId,
                 no_wa,
                 foto_url,
+                email,
             })
             .select()
             .single();
@@ -209,12 +169,14 @@ Deno.serve(async (req) => {
             throw new Error("STEP insert_guru: " + JSON.stringify(guruError));
         }
 
-        const { error: kelasError } = await supabaseAdmin
-            .from("kelas")
-            .update({ wali_kelas_guru_id: guruData.id })
-            .eq("id", kelas_id);
-        if (kelasError) {
-            throw new Error("STEP update_kelas: " + JSON.stringify(kelasError));
+        if (role_guru === "wali_kelas") {
+            const { error: kelasError } = await supabaseAdmin
+                .from("kelas")
+                .update({ wali_kelas_guru_id: guruData.id })
+                .eq("id", kelas_id);
+            if (kelasError) {
+                throw new Error("STEP update_kelas: " + JSON.stringify(kelasError));
+            }
         }
 
         if (Array.isArray(jadwal) && jadwal.length > 0) {
@@ -231,7 +193,7 @@ Deno.serve(async (req) => {
                     .from("jadwal_guru")
                     .insert(jadwalRows);
                 if (jadwalError) {
-                    throw new Error("STEP insert_jadwal_wali: " + JSON.stringify(jadwalError));
+                    throw new Error("STEP insert_jadwal: " + JSON.stringify(jadwalError));
                 }
             }
         }
