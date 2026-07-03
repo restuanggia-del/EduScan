@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import { Input } from "./ui/input";
 import { useState, useRef, useEffect } from "react";
-import { useAuth } from "../../lib/AuthContext";
+import { getEffectiveRole, useAuth } from "../../lib/AuthContext";
 import { toast } from "sonner";
 import { supabase } from "../../lib/supabaseClient";
 import {
@@ -26,7 +26,8 @@ import { cn } from "./ui/utils";
 const roleLabels: Record<string, string> = {
   kepala_sekolah: "Kepala Sekolah",
   tu: "TU",
-  guru: "Guru",
+  guru_biasa: "Guru",
+  guru_wali_kelas: "Guru Wali Kelas",
 };
 
 export function Header({
@@ -38,6 +39,7 @@ export function Header({
 }) {
   const { user, signOut, mustChangePassword, clearMustChangePassword } =
     useAuth();
+  const effectiveRole = getEffectiveRole(user);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -448,7 +450,7 @@ export function Header({
                   {user?.nama || "User"}
                 </div>
                 <div className="text-xs text-muted-foreground">
-                  {roleLabels[user?.role || "guru"]}
+                  {roleLabels[effectiveRole || "guru_biasa"]}
                 </div>
               </div>
               <div className="w-9 h-9 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-medium text-sm">
@@ -465,7 +467,7 @@ export function Header({
                   <p className="font-medium text-sm">{user?.nama}</p>
                   <p className="text-xs text-muted-foreground">{user?.email}</p>
                   <span className="inline-block mt-1 px-2 py-0.5 bg-primary/10 text-primary text-xs rounded-full font-medium">
-                    {roleLabels[user?.role || "guru"]}
+                    {roleLabels[effectiveRole || "guru_biasa"]}
                   </span>
                 </div>
 
