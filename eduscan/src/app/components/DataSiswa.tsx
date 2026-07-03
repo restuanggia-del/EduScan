@@ -49,7 +49,7 @@ export function DataSiswa({
   searchQuery?: string;
 }) {
   const { user, loading: authLoading } = useAuth();
-  const isGuru = user?.role === "guru_wali_kelas";
+  const isGuru = user?.role === "guru";
   const [localSearch, setLocalSearch] = useState("");
   const [students, setStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(true);

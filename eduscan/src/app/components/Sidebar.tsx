@@ -20,7 +20,7 @@ const allMenuItems = [
     id: "dashboard",
     label: "Dashboard",
     icon: Home,
-    roles: ["kepala_sekolah", "tu", "guru_wali_kelas"],
+    roles: ["kepala_sekolah", "tu", "guru"],
   },
   {
     id: "kelas",
@@ -32,7 +32,7 @@ const allMenuItems = [
     id: "siswa",
     label: "Data Siswa",
     icon: Users,
-    roles: ["kepala_sekolah", "tu", "guru_wali_kelas"],
+    roles: ["kepala_sekolah", "tu", "guru"],
   },
   {
     id: "guru",
@@ -50,13 +50,13 @@ const allMenuItems = [
     id: "scan",
     label: "Scan Absensi",
     icon: Scan,
-    roles: ["kepala_sekolah", "tu", "guru_wali_kelas"],
+    roles: ["kepala_sekolah", "tu", "guru"],
   },
   {
     id: "rekap",
     label: "Rekap Absensi",
     icon: FileText,
-    roles: ["kepala_sekolah", "tu", "guru_wali_kelas"],
+    roles: ["kepala_sekolah", "tu", "guru"],
   },
   {
     id: "pengaturan",

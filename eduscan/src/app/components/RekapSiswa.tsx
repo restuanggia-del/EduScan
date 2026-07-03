@@ -25,7 +25,7 @@ type FilterType = "harian" | "mingguan" | "bulanan" | "semester" | "tahunan";
 
 export function RekapSiswa() {
   const { user } = useAuth();
-  const isGWK = user?.role === "guru_wali_kelas";
+  const isGWK = user?.role === "guru";
 
   const [filterType, setFilterType] = useState<FilterType>("harian");
   const [selectedDate, setSelectedDate] = useState(

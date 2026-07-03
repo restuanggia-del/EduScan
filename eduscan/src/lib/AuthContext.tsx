@@ -5,7 +5,7 @@ interface UserProfile {
   id: string;
   nama: string;
   email: string;
-  role: "kepala_sekolah" | "tu" | "guru_wali_kelas";
+  role: "kepala_sekolah" | "tu" | "guru";
 }
 
 interface AuthContextType {
