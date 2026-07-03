@@ -1,14 +1,3 @@
-// supabase/functions/create-akun-guru/index.ts
-//
-// Edge Function ini dipanggil dari frontend saat menambah data Guru.
-// - Kalau role_guru = "biasa"      -> cuma insert ke tabel `guru`, tanpa akun login.
-// - Kalau role_guru = "wali_kelas" -> generate email otomatis, buat akun di Supabase Auth,
-//                                     insert ke `users`, insert ke `guru` (dengan user_id),
-//                                     dan update `kelas.wali_kelas_guru_id`.
-//
-// PENTING: function ini jalan di server (pakai Service Role Key), JANGAN pernah
-// taruh Service Role Key di kode frontend.
-
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -29,6 +18,8 @@ Deno.serve(async (req) => {
     try {
         const body = await req.json();
         const {
+            action,
+            guru_id,
             nama,
             nip,
             mata_pelajaran,
@@ -38,6 +29,80 @@ Deno.serve(async (req) => {
             foto_url,
             jadwal,
         } = body;
+
+        if (action === "buatkan_akun_existing") {
+            if (!guru_id) {
+                return new Response(
+                    JSON.stringify({ error: "guru_id wajib diisi" }),
+                    { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+                );
+            }
+
+            const { data: guruExisting, error: guruFetchError } = await supabaseAdmin
+                .from("guru")
+                .select("id, nama, nip, email, user_id")
+                .eq("id", guru_id)
+                .single();
+
+            if (guruFetchError || !guruExisting) {
+                return new Response(
+                    JSON.stringify({ error: "Data guru tidak ditemukan" }),
+                    { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+                );
+            }
+
+            if (guruExisting.user_id) {
+                return new Response(
+                    JSON.stringify({ error: "Guru ini sudah punya akun" }),
+                    { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+                );
+            }
+            if (!guruExisting.email) {
+                return new Response(
+                    JSON.stringify({ error: "Isi email guru terlebih dahulu" }),
+                    { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+                );
+            }
+            if (!guruExisting.nip) {
+                return new Response(
+                    JSON.stringify({ error: "NIP wajib diisi (dipakai sebagai password default)" }),
+                    { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+                );
+            }
+
+            const defaultPassword = guruExisting.nip;
+
+            const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
+                email: guruExisting.email,
+                password: defaultPassword,
+                email_confirm: true,
+                user_metadata: { nama: guruExisting.nama, role: "guru", must_change_password: true },
+            });
+            if (authError) {
+                throw new Error("STEP create_auth_user_existing: " + JSON.stringify(authError));
+            }
+            if (!authData?.user) {
+                throw new Error("STEP create_auth_user_existing: authData.user kosong, tidak ada error tapi user tidak terbuat");
+            }
+
+            const userId = authData.user.id;
+
+            const { error: updateGuruError } = await supabaseAdmin
+                .from("guru")
+                .update({ user_id: userId })
+                .eq("id", guru_id);
+            if (updateGuruError) {
+                throw new Error("STEP update_guru_user_id: " + JSON.stringify(updateGuruError));
+            }
+
+            return new Response(
+                JSON.stringify({
+                    success: true,
+                    akun: { email: guruExisting.email, password_default: defaultPassword },
+                }),
+                { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+            );
+        }
 
         if (!nama || !role_guru) {
             return new Response(
@@ -115,7 +180,7 @@ Deno.serve(async (req) => {
             email,
             password: defaultPassword,
             email_confirm: true,
-            user_metadata: { nama, role: "guru_wali_kelas", must_change_password: true },
+            user_metadata: { nama, role: "guru", must_change_password: true },
         });
         if (authError) {
             throw new Error("STEP create_auth_user: " + JSON.stringify(authError));
