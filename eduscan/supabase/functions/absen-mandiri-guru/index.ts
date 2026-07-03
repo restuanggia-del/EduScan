@@ -1,4 +1,3 @@
-// supabase/functions/absen-mandiri-guru/index.ts
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const HARI_MAP = ["minggu", "senin", "selasa", "rabu", "kamis", "jumat", "sabtu"];
@@ -44,7 +43,7 @@ Deno.serve(async (req) => {
             return new Response(JSON.stringify({ error: "Tidak ada jadwal mengajar hari ini" }), { status: 400 });
         }
 
-        const jamSekarang = now.toTimeString().slice(0, 8); // "HH:MM:SS"
+        const jamSekarang = now.toTimeString().slice(0, 8);
         status = jamSekarang <= jadwal.jam_masuk ? "hadir" : "terlambat";
     } else if (tipe === "pulang") {
         status = "pulang";

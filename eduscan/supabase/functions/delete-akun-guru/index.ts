@@ -1,15 +1,3 @@
-// supabase/functions/delete-akun-guru/index.ts
-//
-// Edge Function ini dipanggil saat KS/TU menghapus data guru.
-// - Lepas dulu referensi wali_kelas_guru_id di tabel kelas (kalau ada)
-// - Hapus baris di tabel guru
-// - Kalau guru ini punya akun login (user_id terisi):
-//     - Hapus baris di tabel users
-//     - Hapus akun di Supabase Auth (auth.users) lewat Admin API
-//
-// PENTING: butuh Service Role Key (otomatis tersedia di environment Edge Function),
-// JANGAN taruh di kode frontend.
-
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
