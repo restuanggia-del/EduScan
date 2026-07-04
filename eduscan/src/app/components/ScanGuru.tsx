@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Search, CheckCircle, AlertTriangle } from "lucide-react";
+import { Search, CheckCircle, AlertTriangle, Zap } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
@@ -14,6 +14,7 @@ import { Badge } from "./ui/badge";
 import { cn } from "./ui/utils";
 import { supabase } from "../../lib/supabaseClient";
 import { toast } from "sonner";
+import { DaruratGuru } from "./DaruratGuru";
 
 type StatusGuru =
   | "hadir"
@@ -53,6 +54,7 @@ const statusColor: Record<string, string> = {
 };
 
 export function ScanGuru() {
+  const [showDarurat, setShowDarurat] = useState(false);
   const [search, setSearch] = useState("");
   const [targets, setTargets] = useState<Target[]>([]);
   const [loading, setLoading] = useState(true);
@@ -228,102 +230,119 @@ export function ScanGuru() {
 
   return (
     <div className="p-6 space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold text-foreground">
-          Scan Absensi Guru
-        </h2>
-        <p className="text-muted-foreground">
-          Absensi untuk Guru & Kepala Sekolah. Status Hadir/Terlambat dihitung
-          otomatis berdasarkan jadwal mengajar.
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold text-foreground">
+            Scan Absensi Guru
+          </h2>
+          <p className="text-muted-foreground">
+            Absensi untuk Guru & Kepala Sekolah. Status Hadir/Terlambat dihitung
+            otomatis berdasarkan jadwal mengajar.
+          </p>
+        </div>
+        <Button
+          variant={showDarurat ? "default" : "outline"}
+          className={cn(
+            "cursor-pointer",
+            showDarurat && "bg-amber-500 hover:bg-amber-600 border-amber-500",
+          )}
+          onClick={() => setShowDarurat((v) => !v)}
+        >
+          <Zap className="w-4 h-4 mr-1" />
+          {showDarurat ? "Tutup Mode Darurat" : "Mode Darurat"}
+        </Button>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Cari Guru / Kepala Sekolah</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input
-              className="pl-9"
-              placeholder="Cari nama atau NIP/email..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-          </div>
-
-          {loading ? (
-            <p className="text-muted-foreground text-sm text-center py-6">
-              Memuat...
-            </p>
-          ) : (
-            <div className="space-y-2 max-h-[480px] overflow-y-auto">
-              {filteredTargets.map((t) => {
-                const masukDone = sudahAbsen(t.key, "masuk");
-                const pulangDone = sudahAbsen(t.key, "pulang");
-                return (
-                  <div
-                    key={t.key}
-                    className="flex items-center justify-between border rounded-lg p-3"
-                  >
-                    <div>
-                      <p className="font-medium text-sm">
-                        {t.nama}{" "}
-                        {t.peran === "kepala_sekolah" && (
-                          <Badge variant="secondary" className="ml-1">
-                            Kepala Sekolah
-                          </Badge>
-                        )}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {t.nip_email}
-                      </p>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button
-                        size="sm"
-                        variant={masukDone ? "outline" : "default"}
-                        disabled={masukDone}
-                        className="cursor-pointer"
-                        onClick={() => handleAbsenMasukClick(t)}
-                      >
-                        {masukDone ? (
-                          <>
-                            <CheckCircle className="w-4 h-4 mr-1" /> Masuk
-                          </>
-                        ) : (
-                          "Absen Masuk"
-                        )}
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant={pulangDone ? "outline" : "secondary"}
-                        disabled={pulangDone || !masukDone}
-                        className="cursor-pointer"
-                        onClick={() => handleAbsenPulangClick(t)}
-                      >
-                        {pulangDone ? (
-                          <>
-                            <CheckCircle className="w-4 h-4 mr-1" /> Pulang
-                          </>
-                        ) : (
-                          "Absen Pulang"
-                        )}
-                      </Button>
-                    </div>
-                  </div>
-                );
-              })}
-              {filteredTargets.length === 0 && (
-                <p className="text-muted-foreground text-sm text-center py-6">
-                  Tidak ada data ditemukan.
-                </p>
-              )}
+      {showDarurat ? (
+        <DaruratGuru />
+      ) : (
+        <Card>
+          <CardHeader>
+            <CardTitle>Cari Guru / Kepala Sekolah</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                className="pl-9"
+                placeholder="Cari nama atau NIP/email..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
             </div>
-          )}
-        </CardContent>
-      </Card>
+
+            {loading ? (
+              <p className="text-muted-foreground text-sm text-center py-6">
+                Memuat...
+              </p>
+            ) : (
+              <div className="space-y-2 max-h-[480px] overflow-y-auto">
+                {filteredTargets.map((t) => {
+                  const masukDone = sudahAbsen(t.key, "masuk");
+                  const pulangDone = sudahAbsen(t.key, "pulang");
+                  return (
+                    <div
+                      key={t.key}
+                      className="flex items-center justify-between border rounded-lg p-3"
+                    >
+                      <div>
+                        <p className="font-medium text-sm">
+                          {t.nama}{" "}
+                          {t.peran === "kepala_sekolah" && (
+                            <Badge variant="secondary" className="ml-1">
+                              Kepala Sekolah
+                            </Badge>
+                          )}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {t.nip_email}
+                        </p>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant={masukDone ? "outline" : "default"}
+                          disabled={masukDone}
+                          className="cursor-pointer"
+                          onClick={() => handleAbsenMasukClick(t)}
+                        >
+                          {masukDone ? (
+                            <>
+                              <CheckCircle className="w-4 h-4 mr-1" /> Masuk
+                            </>
+                          ) : (
+                            "Absen Masuk"
+                          )}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant={pulangDone ? "outline" : "secondary"}
+                          disabled={pulangDone || !masukDone}
+                          className="cursor-pointer"
+                          onClick={() => handleAbsenPulangClick(t)}
+                        >
+                          {pulangDone ? (
+                            <>
+                              <CheckCircle className="w-4 h-4 mr-1" /> Pulang
+                            </>
+                          ) : (
+                            "Absen Pulang"
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                })}
+                {filteredTargets.length === 0 && (
+                  <p className="text-muted-foreground text-sm text-center py-6">
+                    Tidak ada data ditemukan.
+                  </p>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       <Dialog
         open={!!pendingTarget}
