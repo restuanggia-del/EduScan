@@ -8,6 +8,7 @@ import {
   School,
   Search,
   UserX,
+  Zap,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
@@ -15,6 +16,7 @@ import { Input } from "./ui/input";
 import { cn } from "./ui/utils";
 import { supabase } from "../../lib/supabaseClient";
 import { toast } from "sonner";
+import { DaruratSiswa } from "./DaruratSiswa";
 
 interface AbsensiRecord {
   id: string;
@@ -47,6 +49,7 @@ export function ScanSiswa() {
   const [errorMessage, setErrorMessage] = useState("");
 
   const [showManual, setShowManual] = useState(false);
+  const [showDarurat, setShowDarurat] = useState(false);
   const [manualSearch, setManualSearch] = useState("");
   const [allSiswa, setAllSiswa] = useState<Siswa[]>([]);
   const [filteredSiswa, setFilteredSiswa] = useState<Siswa[]>([]);
@@ -593,10 +596,13 @@ export function ScanSiswa() {
         <div className="lg:col-span-2 space-y-6">
           <div className="flex gap-2">
             <button
-              onClick={() => setShowManual(false)}
+              onClick={() => {
+                setShowManual(false);
+                setShowDarurat(false);
+              }}
               className={cn(
                 "flex-1 py-2.5 rounded-lg text-sm font-medium border transition-colors cursor-pointer",
-                !showManual
+                !showManual && !showDarurat
                   ? "bg-primary text-primary-foreground border-primary"
                   : "border-input hover:bg-muted",
               )}
@@ -604,7 +610,10 @@ export function ScanSiswa() {
               📷 Scan QR Code
             </button>
             <button
-              onClick={() => setShowManual(true)}
+              onClick={() => {
+                setShowManual(true);
+                setShowDarurat(false);
+              }}
               className={cn(
                 "flex-1 py-2.5 rounded-lg text-sm font-medium border transition-colors cursor-pointer",
                 showManual
@@ -615,9 +624,24 @@ export function ScanSiswa() {
               <UserX className="w-4 h-4 inline mr-1" />
               Input Manual (Hadir/Izin/Sakit/Alfa)
             </button>
+            <button
+              onClick={() => {
+                setShowManual(false);
+                setShowDarurat(true);
+              }}
+              className={cn(
+                "flex-1 py-2.5 rounded-lg text-sm font-medium border transition-colors cursor-pointer",
+                showDarurat
+                  ? "bg-amber-500 text-white border-amber-500"
+                  : "border-input hover:bg-muted",
+              )}
+            >
+              <Zap className="w-4 h-4 inline mr-1" />
+              Mode Darurat
+            </button>
           </div>
 
-          {!showManual && (
+          {!showManual && !showDarurat && (
             <Card>
               <CardHeader>
                 <div className="flex items-center justify-between">
@@ -807,7 +831,9 @@ export function ScanSiswa() {
             </Card>
           )}
 
-          {showSuccess && lastScan && !showManual && (
+          {showDarurat && <DaruratSiswa />}
+
+          {showSuccess && lastScan && !showManual && !showDarurat && (
             <Card className="border-primary bg-primary/5">
               <CardContent className="p-6">
                 <div className="flex items-start gap-4">
@@ -934,11 +960,13 @@ export function ScanSiswa() {
                 <div>
                   <p className="font-medium">Mode Saat Ini</p>
                   <p className="text-muted-foreground">
-                    {showManual
-                      ? "📝 Input Manual"
-                      : mode === "masuk"
-                        ? "🟢 Absen Masuk"
-                        : "🔵 Absen Pulang"}
+                    {showDarurat
+                      ? "⚡ Mode Darurat"
+                      : showManual
+                        ? "📝 Input Manual"
+                        : mode === "masuk"
+                          ? "🟢 Absen Masuk"
+                          : "🔵 Absen Pulang"}
                   </p>
                 </div>
               </div>
