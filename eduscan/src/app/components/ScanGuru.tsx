@@ -29,7 +29,7 @@ interface Target {
   key: string;
   nama: string;
   nip_email: string;
-  peran: "guru" | "kepala_sekolah";
+  peran: "guru" | "kepala_sekolah" | "tu";
   guru_id: string | null;
   user_id: string | null;
 }
@@ -71,7 +71,7 @@ export function ScanGuru() {
     {
       key: string;
       nama: string;
-      peran: "guru" | "kepala_sekolah";
+      peran: "guru" | "kepala_sekolah" | "tu";
       status: string;
       jam: string;
       jenis: "masuk" | "pulang";
@@ -98,8 +98,8 @@ export function ScanGuru() {
 
     const { data: ksData } = await supabase
       .from("users")
-      .select("id, nama, email")
-      .eq("role", "kepala_sekolah");
+      .select("id, nama, email, role")
+      .in("role", ["kepala_sekolah", "tu"]);
 
     const guruTargets: Target[] = (guruData || []).map((g) => ({
       key: g.id,
@@ -114,7 +114,7 @@ export function ScanGuru() {
       key: u.id,
       nama: u.nama,
       nip_email: u.email,
-      peran: "kepala_sekolah",
+      peran: u.role === "kepala_sekolah" ? "kepala_sekolah" : "tu",
       guru_id: null,
       user_id: u.id,
     }));
@@ -144,7 +144,7 @@ export function ScanGuru() {
       return {
         key: a.guru_id || a.user_id,
         nama: a.guru?.nama || a.users?.nama || "-",
-        peran: a.peran as "guru" | "kepala_sekolah",
+        peran: a.peran as "guru" | "kepala_sekolah" | "tu",
         status: a.status,
         jam,
         jenis: a.status === "pulang" ? ("pulang" as const) : ("masuk" as const),
@@ -159,7 +159,7 @@ export function ScanGuru() {
       {
         key: string;
         nama: string;
-        peran: "guru" | "kepala_sekolah";
+        peran: "guru" | "kepala_sekolah" | "tu";
         jamMasuk?: string;
         jamPulang?: string;
         status?: string;
@@ -203,7 +203,7 @@ export function ScanGuru() {
       return;
     }
 
-    if (target.peran === "kepala_sekolah") {
+    if (target.peran === "kepala_sekolah" || target.peran === "tu") {
       setPendingTarget(target);
       setPendingMode("masuk");
       setManualStatus("hadir");
@@ -346,6 +346,11 @@ export function ScanGuru() {
                               Kepala Sekolah
                             </Badge>
                           )}
+                          {t.peran === "tu" && (
+                            <Badge variant="secondary" className="ml-1">
+                              TU
+                            </Badge>
+                          )}
                         </p>
                         <p className="text-xs text-muted-foreground">
                           {t.nip_email}
@@ -434,7 +439,9 @@ export function ScanGuru() {
                     <td className="py-3 px-4 text-muted-foreground">
                       {row.peran === "kepala_sekolah"
                         ? "Kepala Sekolah"
-                        : "Guru"}
+                        : row.peran === "tu"
+                          ? "TU"
+                          : "Guru"}
                     </td>
                     <td className="py-3 px-4">{row.jamMasuk || "-"}</td>
                     <td className="py-3 px-4">{row.jamPulang || "-"}</td>
@@ -478,8 +485,9 @@ export function ScanGuru() {
               Pilih Status Manual
             </DialogTitle>
             <DialogDescription>
-              {pendingTarget?.peran === "kepala_sekolah"
-                ? "Kepala Sekolah tidak punya jadwal otomatis. Pilih status absensi secara manual."
+              {pendingTarget?.peran === "kepala_sekolah" ||
+              pendingTarget?.peran === "tu"
+                ? "Kepala Sekolah/TU tidak punya jadwal otomatis. Pilih status absensi secara manual."
                 : `${pendingTarget?.nama} tidak ada jadwal mengajar hari ini. Pilih status absensi secara manual.`}
             </DialogDescription>
           </DialogHeader>
