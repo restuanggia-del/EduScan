@@ -7,6 +7,7 @@ interface UserProfile {
   email: string;
   role: "kepala_sekolah" | "tu" | "guru";
   role_guru?: "biasa" | "wali_kelas" | null;
+  nip?: string | null;
 }
 
 interface AuthContextType {

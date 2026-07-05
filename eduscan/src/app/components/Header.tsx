@@ -41,6 +41,7 @@ export function Header({
   const [showProfil, setShowProfil] = useState(false);
   const [profilForm, setProfilForm] = useState({
     nama: user?.nama || "",
+    nip: user?.nip || "",
     passwordLama: "",
     passwordBaru: "",
     passwordKonfirmasi: "",
@@ -55,7 +56,11 @@ export function Header({
 
   useEffect(() => {
     if (mustChangePassword) {
-      setProfilForm((prev) => ({ ...prev, nama: user?.nama || "" }));
+      setProfilForm((prev) => ({
+        ...prev,
+        nama: user?.nama || "",
+        nip: user?.nip || "",
+      }));
       setShowProfil(true);
     }
   }, [mustChangePassword, user?.nama]);
@@ -152,7 +157,12 @@ export function Header({
 
     const { error: nameError } = await supabase
       .from("users")
-      .update({ nama: profilForm.nama })
+      .update({
+        nama: profilForm.nama,
+        ...(effectiveRole === "kepala_sekolah" || effectiveRole === "tu"
+          ? { nip: profilForm.nip.trim() || null }
+          : {}),
+      })
       .eq("id", user?.id);
 
     if (nameError) {
@@ -314,7 +324,7 @@ export function Header({
 
   return (
     <>
-      <header className="h-16 bg-white border-b border-border px-6 flex items-center justify-between">
+      <header className="sticky top-0 z-50 h-16 bg-white/95 backdrop-blur border-b border-border px-6 flex items-center justify-between">
         <div className="flex-1 max-w-xl" ref={searchRef}>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -466,7 +476,11 @@ export function Header({
                 <div className="p-1">
                   <button
                     onClick={() => {
-                      setProfilForm({ ...profilForm, nama: user?.nama || "" });
+                      setProfilForm({
+                        ...profilForm,
+                        nama: user?.nama || "",
+                        nip: user?.nip || "",
+                      });
                       setShowProfil(true);
                       setDropdownOpen(false);
                     }}
@@ -584,6 +598,20 @@ export function Header({
                 placeholder="Masukkan nama lengkap"
               />
             </div>
+
+            {(effectiveRole === "kepala_sekolah" || effectiveRole === "tu") && (
+              <div className="space-y-2">
+                <Label htmlFor="nip">NIP</Label>
+                <Input
+                  id="nip"
+                  value={profilForm.nip}
+                  onChange={(e) =>
+                    setProfilForm({ ...profilForm, nip: e.target.value })
+                  }
+                  placeholder="Nomor Induk Pegawai"
+                />
+              </div>
+            )}
 
             <div className="border-t pt-4 space-y-3">
               <p className="text-sm font-medium">Ganti Password</p>
