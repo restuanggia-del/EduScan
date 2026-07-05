@@ -43,6 +43,15 @@ const STATUS_OPTIONS: { value: StatusGuru; label: string }[] = [
   { value: "ts", label: "TS (Tugas Sekolah)" },
 ];
 
+const statusLabel: Record<string, string> = {
+  hadir: "Hadir",
+  terlambat: "Terlambat",
+  izin: "Izin",
+  sakit: "Sakit",
+  alfa: "Alfa",
+  ts: "TS",
+};
+
 const statusColor: Record<string, string> = {
   hadir: "bg-primary/10 text-primary",
   terlambat: "bg-amber-100 text-amber-700",
@@ -59,7 +68,14 @@ export function ScanGuru() {
   const [targets, setTargets] = useState<Target[]>([]);
   const [loading, setLoading] = useState(true);
   const [todayRecords, setTodayRecords] = useState<
-    { key: string; status: string; jam: string; jenis: "masuk" | "pulang" }[]
+    {
+      key: string;
+      nama: string;
+      peran: "guru" | "kepala_sekolah";
+      status: string;
+      jam: string;
+      jenis: "masuk" | "pulang";
+    }[]
   >([]);
 
   const [pendingTarget, setPendingTarget] = useState<Target | null>(null);
@@ -111,7 +127,7 @@ export function ScanGuru() {
     const today = new Date().toISOString().split("T")[0];
     const { data, error } = await supabase
       .from("absensi_guru")
-      .select("*")
+      .select("*, guru(nama), users(nama)")
       .eq("tanggal", today)
       .order("waktu_scan", { ascending: false });
 
@@ -120,13 +136,15 @@ export function ScanGuru() {
       return;
     }
 
-    const records = (data || []).map((a) => {
+    const records = (data || []).map((a: any) => {
       const d = new Date(a.waktu_scan);
       const jam = `${String(d.getHours()).padStart(2, "0")}:${String(
         d.getMinutes(),
       ).padStart(2, "0")}`;
       return {
         key: a.guru_id || a.user_id,
+        nama: a.guru?.nama || a.users?.nama || "-",
+        peran: a.peran as "guru" | "kepala_sekolah",
         status: a.status,
         jam,
         jenis: a.status === "pulang" ? ("pulang" as const) : ("masuk" as const),
@@ -134,6 +152,41 @@ export function ScanGuru() {
     });
     setTodayRecords(records);
   };
+
+  const riwayatRows = (() => {
+    const map = new Map<
+      string,
+      {
+        key: string;
+        nama: string;
+        peran: "guru" | "kepala_sekolah";
+        jamMasuk?: string;
+        jamPulang?: string;
+        status?: string;
+      }
+    >();
+
+    [...todayRecords].reverse().forEach((r) => {
+      const existing = map.get(r.key) || {
+        key: r.key,
+        nama: r.nama,
+        peran: r.peran,
+      };
+      if (r.jenis === "masuk") {
+        existing.jamMasuk = r.jam;
+        existing.status = r.status;
+      } else {
+        existing.jamPulang = r.jam;
+      }
+      map.set(r.key, existing);
+    });
+
+    return Array.from(map.values()).sort((a, b) =>
+      (a.jamMasuk || a.jamPulang || "").localeCompare(
+        b.jamMasuk || b.jamPulang || "",
+      ),
+    );
+  })();
 
   const sudahAbsen = (key: string, jenis: "masuk" | "pulang") =>
     todayRecords.some((r) => r.key === key && r.jenis === jenis);
@@ -343,6 +396,76 @@ export function ScanGuru() {
           </CardContent>
         </Card>
       )}
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Riwayat Absensi Hari Ini</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-border">
+                  {[
+                    "No",
+                    "Nama",
+                    "Peran",
+                    "Jam Masuk",
+                    "Jam Pulang",
+                    "Status",
+                  ].map((h) => (
+                    <th
+                      key={h}
+                      className="text-left py-3 px-4 text-sm font-medium text-muted-foreground"
+                    >
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {riwayatRows.map((row, index) => (
+                  <tr
+                    key={row.key}
+                    className="border-b border-border last:border-0 hover:bg-muted/50"
+                  >
+                    <td className="py-3 px-4">{index + 1}</td>
+                    <td className="py-3 px-4 font-medium">{row.nama}</td>
+                    <td className="py-3 px-4 text-muted-foreground">
+                      {row.peran === "kepala_sekolah"
+                        ? "Kepala Sekolah"
+                        : "Guru"}
+                    </td>
+                    <td className="py-3 px-4">{row.jamMasuk || "-"}</td>
+                    <td className="py-3 px-4">{row.jamPulang || "-"}</td>
+                    <td className="py-3 px-4">
+                      {row.status ? (
+                        <span
+                          className={cn(
+                            "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium",
+                            statusColor[row.status],
+                          )}
+                        >
+                          {statusLabel[row.status] || row.status}
+                        </span>
+                      ) : (
+                        "-"
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {riwayatRows.length === 0 && (
+              <div className="text-center py-12">
+                <p className="text-muted-foreground">
+                  Belum ada absensi hari ini
+                </p>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
 
       <Dialog
         open={!!pendingTarget}
