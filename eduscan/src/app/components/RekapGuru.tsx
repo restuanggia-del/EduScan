@@ -10,8 +10,8 @@ import { cn } from "./ui/utils";
 interface RekapGuruData {
   key: string;
   nama: string;
-  nip_email: string;
-  peran: "guru" | "kepala_sekolah";
+  nip: string;
+  peran: "guru_biasa" | "wali_kelas" | "kepala_sekolah" | "tu";
   hadir: number;
   terlambat: number;
   izin: number;
@@ -20,6 +20,13 @@ interface RekapGuruData {
   ts: number;
   total: number;
 }
+
+const peranLabel: Record<string, string> = {
+  kepala_sekolah: "Kepala Sekolah (KS)",
+  tu: "TU",
+  guru_biasa: "Guru Biasa",
+  wali_kelas: "Guru Wali Kelas",
+};
 
 type FilterType = "harian" | "mingguan" | "bulanan" | "semester" | "tahunan";
 
@@ -84,74 +91,53 @@ export function RekapGuru() {
     setLoading(true);
     const { start, end } = getDateRange();
 
-    const { data: guruData } = await supabase
-      .from("guru")
-      .select("id, nama, nip, user_id")
-      .order("nama");
-
-    const { data: ksData } = await supabase
-      .from("users")
-      .select("id, nama, email")
-      .eq("role", "kepala_sekolah");
-
-    const { data: absensiData } = await supabase
-      .from("absensi_guru")
-      .select("guru_id, user_id, peran, status, tanggal")
-      .gte("tanggal", start)
-      .lte("tanggal", end);
-
-    const rekapGuru: RekapGuruData[] = (guruData || []).map((g) => {
-      const rows = (absensiData || []).filter(
-        (a) => a.peran === "guru" && a.guru_id === g.id,
-      );
-      return buildRow(g.id, g.nama, g.nip || "-", "guru", rows);
+    const { error: rpcError } = await supabase.rpc("fn_generate_rekap_guru", {
+      p_jenis_periode: filterType,
+      p_periode_awal: start,
+      p_periode_akhir: end,
     });
 
-    const rekapKs: RekapGuruData[] = (ksData || []).map((u) => {
-      const rows = (absensiData || []).filter(
-        (a) => a.peran === "kepala_sekolah" && a.user_id === u.id,
-      );
-      return buildRow(u.id, u.nama, u.email, "kepala_sekolah", rows);
-    });
+    if (rpcError) {
+      console.error("Gagal generate rekap guru:", rpcError.message);
+    }
 
-    setRekapData([...rekapKs, ...rekapGuru]);
+    const { data, error } = await supabase
+      .from("rekap_absensi_guru")
+      .select("*, guru(nama), users(nama)")
+      .eq("jenis_periode", filterType)
+      .eq("periode_awal", start)
+      .eq("periode_akhir", end);
+
+    if (error) {
+      console.error("Gagal memuat rekap guru:", error.message);
+      setRekapData([]);
+      setLoading(false);
+      return;
+    }
+
+    const rows: RekapGuruData[] = (data || []).map((r: any) => ({
+      key: r.guru_id || r.user_id,
+      nama: r.guru?.nama || r.users?.nama || "-",
+      nip: r.nip || "-",
+      peran: r.peran,
+      hadir: r.hadir,
+      terlambat: r.terlambat,
+      izin: r.izin,
+      sakit: r.sakit,
+      alfa: r.alfa,
+      ts: r.ts,
+      total: r.total,
+    }));
+
+    rows.sort((a, b) => a.nama.localeCompare(b.nama));
+    setRekapData(rows);
     setLoading(false);
-  };
-
-  const buildRow = (
-    key: string,
-    nama: string,
-    nip_email: string,
-    peran: "guru" | "kepala_sekolah",
-    rows: { status: string }[],
-  ): RekapGuruData => {
-    const count = (status: string) =>
-      rows.filter((r) => r.status === status).length;
-    const hadir = count("hadir");
-    const terlambat = count("terlambat");
-    const izin = count("izin");
-    const sakit = count("sakit");
-    const alfa = count("alfa");
-    const ts = count("ts");
-    return {
-      key,
-      nama,
-      nip_email,
-      peran,
-      hadir,
-      terlambat,
-      izin,
-      sakit,
-      alfa,
-      ts,
-      total: hadir + terlambat + izin + sakit + alfa + ts,
-    };
   };
 
   const filteredRekap = rekapData.filter(
     (r) =>
       r.nama.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      r.nip_email.toLowerCase().includes(searchQuery.toLowerCase()),
+      r.nip.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
   const totalHadir = rekapData.reduce((acc, r) => acc + r.hadir, 0);
@@ -165,7 +151,7 @@ export function RekapGuru() {
     const { start, end } = getDateRange();
     const headers = [
       "No",
-      "NIP/Email",
+      "NIP",
       "Nama",
       "Peran",
       "Hadir",
@@ -178,9 +164,9 @@ export function RekapGuru() {
     ];
     const rows = filteredRekap.map((r, i) => [
       i + 1,
-      r.nip_email,
+      r.nip,
       r.nama,
-      r.peran === "kepala_sekolah" ? "Kepala Sekolah" : "Guru",
+      peranLabel[r.peran] || r.peran,
       r.hadir,
       r.terlambat,
       r.izin,
@@ -351,7 +337,7 @@ export function RekapGuru() {
             <div className="relative w-72">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
-                placeholder="Cari nama, NIP/email..."
+                placeholder="Cari nama, NIP..."
                 className="pl-10"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -373,7 +359,7 @@ export function RekapGuru() {
                       No
                     </th>
                     <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">
-                      NIP/Email
+                      NIP
                     </th>
                     <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">
                       Nama
@@ -411,12 +397,10 @@ export function RekapGuru() {
                       className="border-b border-border last:border-0 hover:bg-muted/50"
                     >
                       <td className="py-3 px-4">{index + 1}</td>
-                      <td className="py-3 px-4">{r.nip_email}</td>
+                      <td className="py-3 px-4">{r.nip}</td>
                       <td className="py-3 px-4 font-medium">{r.nama}</td>
                       <td className="py-3 px-4 text-muted-foreground">
-                        {r.peran === "kepala_sekolah"
-                          ? "Kepala Sekolah"
-                          : "Guru"}
+                        {peranLabel[r.peran] || r.peran}
                       </td>
                       <td className="py-3 px-4 text-center">
                         <span className="bg-primary/10 text-primary px-2 py-0.5 rounded-full text-sm font-medium">

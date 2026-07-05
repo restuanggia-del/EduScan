@@ -120,7 +120,6 @@ export function RekapSiswa() {
       };
     }
 
-    // tahunan
     const start = new Date(date.getFullYear(), 0, 1);
     const end = new Date(date.getFullYear(), 11, 31);
     return {
@@ -143,35 +142,42 @@ export function RekapSiswa() {
       return;
     }
 
-    const { data: absensiData } = await supabase
-      .from("absensi_siswa")
-      .select("siswa_id, status, tanggal")
-      .gte("tanggal", start)
-      .lte("tanggal", end);
+    const { error: rpcError } = await supabase.rpc("fn_generate_rekap_siswa", {
+      p_jenis_periode: filterType,
+      p_periode_awal: start,
+      p_periode_akhir: end,
+    });
+
+    if (rpcError) {
+      console.error("Gagal generate rekap siswa:", rpcError.message);
+    }
+
+    const siswaIds = siswaData.map((s) => s.id);
+    const { data: rekapRows, error } = await supabase
+      .from("rekap_absensi_siswa")
+      .select("*")
+      .eq("jenis_periode", filterType)
+      .eq("periode_awal", start)
+      .eq("periode_akhir", end)
+      .in("siswa_id", siswaIds);
+
+    if (error) {
+      console.error("Gagal memuat rekap siswa:", error.message);
+    }
 
     const rekap: RekapData[] = siswaData.map((siswa) => {
-      const absensiSiswa =
-        absensiData?.filter((a) => a.siswa_id === siswa.id) || [];
-
-      const hadir = absensiSiswa.filter((a) => a.status === "hadir").length;
-      const terlambat = absensiSiswa.filter(
-        (a) => a.status === "terlambat",
-      ).length;
-      const izin = absensiSiswa.filter((a) => a.status === "izin").length;
-      const sakit = absensiSiswa.filter((a) => a.status === "sakit").length;
-      const alfa = absensiSiswa.filter((a) => a.status === "alfa").length;
-
+      const row = (rekapRows || []).find((r) => r.siswa_id === siswa.id);
       return {
         siswaId: siswa.id,
         nama: siswa.nama,
         nisn: siswa.nisn,
         kelas: siswa.kelas,
-        hadir,
-        terlambat,
-        izin,
-        sakit,
-        alfa,
-        total: hadir + terlambat + izin + sakit + alfa,
+        hadir: row?.hadir || 0,
+        terlambat: row?.terlambat || 0,
+        izin: row?.izin || 0,
+        sakit: row?.sakit || 0,
+        alfa: row?.alfa || 0,
+        total: row?.total || 0,
       };
     });
 
