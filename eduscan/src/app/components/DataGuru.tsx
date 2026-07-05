@@ -67,6 +67,7 @@ export function DataGuru() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [editingGuru, setEditingGuru] = useState<Guru | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [loadingJadwal, setLoadingJadwal] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
@@ -416,7 +417,7 @@ export function DataGuru() {
                             variant="ghost"
                             className="cursor-pointer text-destructive"
                             disabled={deletingId === g.id}
-                            onClick={() => handleDelete(g.id)}
+                            onClick={() => setConfirmDeleteId(g.id)}
                           >
                             <Trash2 className="w-4 h-4" />
                           </Button>
@@ -682,6 +683,40 @@ export function DataGuru() {
               </Button>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={confirmDeleteId !== null}
+        onOpenChange={(open) => !open && setConfirmDeleteId(null)}
+      >
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Hapus Guru</DialogTitle>
+            <DialogDescription>
+              Apakah kamu yakin ingin menghapus guru ini? Data yang dihapus
+              tidak bisa dikembalikan.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end gap-2 pt-4">
+            <button
+              onClick={() => setConfirmDeleteId(null)}
+              className="px-4 py-2 rounded-md border border-input text-sm hover:bg-muted cursor-pointer"
+            >
+              Batal
+            </button>
+            <button
+              onClick={() => {
+                if (confirmDeleteId) {
+                  handleDelete(confirmDeleteId);
+                  setConfirmDeleteId(null);
+                }
+              }}
+              className="px-4 py-2 rounded-md bg-destructive text-destructive-foreground text-sm hover:bg-destructive/90 cursor-pointer"
+            >
+              Hapus
+            </button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
