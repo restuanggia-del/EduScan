@@ -1,12 +1,4 @@
-import {
-  Search,
-  Bell,
-  LogOut,
-  ChevronDown,
-  User,
-  KeyRound,
-  X,
-} from "lucide-react";
+import { Search, Bell, LogOut, ChevronDown, User, X } from "lucide-react";
 import { Input } from "./ui/input";
 import { useState, useRef, useEffect } from "react";
 import { getEffectiveRole, useAuth } from "../../lib/AuthContext";
@@ -484,18 +476,6 @@ export function Header({
                     Edit Profil
                   </button>
 
-                  <button
-                    onClick={() => {
-                      setProfilForm({ ...profilForm, nama: user?.nama || "" });
-                      setShowProfil(true);
-                      setDropdownOpen(false);
-                    }}
-                    className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted rounded-md transition-colors cursor-pointer"
-                  >
-                    <KeyRound className="w-4 h-4" />
-                    Ganti Password
-                  </button>
-
                   <div className="border-t border-border my-1" />
 
                   <button
@@ -547,7 +527,7 @@ export function Header({
       <Dialog
         open={showProfil}
         onOpenChange={(open) => {
-          if (!open && mustChangePassword) return; // tidak bisa ditutup kalau wajib ganti password
+          if (!open && mustChangePassword) return;
           setShowProfil(open);
         }}
       >
