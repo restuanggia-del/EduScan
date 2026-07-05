@@ -13,11 +13,13 @@ import { RekapAbsensi } from "./components/RekapAbsensi";
 import { AbsenSaya } from "./components/AbsenSaya";
 import { useAuth, getEffectiveRole } from "../lib/AuthContext";
 import { Login } from "./components/Login";
+import { Register } from "./components/Register";
 
 export default function App() {
   const { user, loading } = useAuth();
   const [currentPage, setCurrentPage] = useState("dashboard");
   const [searchQuery, setSearchQuery] = useState("");
+  const [authMode, setAuthMode] = useState<"login" | "register">("login");
 
   if (loading) {
     return (
@@ -27,7 +29,13 @@ export default function App() {
     );
   }
 
-  if (!user) return <Login />;
+  if (!user) {
+    return authMode === "login" ? (
+      <Login onRegisterClick={() => setAuthMode("register")} />
+    ) : (
+      <Register onBack={() => setAuthMode("login")} />
+    );
+  }
 
   const renderPage = () => {
     const effectiveRole = getEffectiveRole(user);

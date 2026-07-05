@@ -12,7 +12,7 @@ import {
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 
-export function Login() {
+export function Login({ onRegisterClick }: { onRegisterClick?: () => void }) {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
@@ -56,8 +56,8 @@ export function Login() {
           <CardHeader>
             <CardTitle>Masuk ke Akun</CardTitle>
             <CardDescription>
-              Masukkan email dan password kamu. Akun dibuat oleh Kepala Sekolah
-              / TU melalui menu Data Guru.
+              Masukkan email dan password kamu. Akun Guru dibuat oleh Kepala
+              Sekolah / TU melalui menu Data Guru.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -108,6 +108,18 @@ export function Login() {
             >
               {loading ? "Memproses..." : "Masuk"}
             </button>
+
+            {onRegisterClick && (
+              <p className="text-center text-sm text-muted-foreground">
+                Kepala Sekolah atau TU belum punya akun?{" "}
+                <button
+                  onClick={onRegisterClick}
+                  className="text-primary font-medium hover:underline cursor-pointer"
+                >
+                  Daftar di sini
+                </button>
+              </p>
+            )}
           </CardContent>
         </Card>
 
