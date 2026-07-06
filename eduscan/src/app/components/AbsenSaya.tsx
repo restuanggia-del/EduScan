@@ -102,7 +102,7 @@ export function AbsenSaya() {
     );
 
     if (error) {
-      toast.error(error.message || "Gagal melakukan absen.");
+      toast.error(error.message || "Gagal melakukan presensi.");
       setActionLoading(null);
       return;
     }
@@ -114,8 +114,8 @@ export function AbsenSaya() {
 
     toast.success(
       tipe === "masuk"
-        ? "Absen masuk berhasil dicatat"
-        : "Absen pulang berhasil dicatat",
+        ? "Presensi masuk berhasil dicatat"
+        : "Presensi pulang berhasil dicatat",
     );
     await loadData();
     setActionLoading(null);
@@ -165,9 +165,9 @@ export function AbsenSaya() {
   return (
     <div className="max-w-xl mx-auto mt-6 space-y-6 p-6">
       <div>
-        <h1 className="text-2xl font-bold text-foreground">Absen Saya</h1>
+        <h1 className="text-2xl font-bold text-foreground">Presensi Saya</h1>
         <p className="text-muted-foreground">
-          Halo, {guru?.nama}. Silakan lakukan absen mandiri di bawah.
+          Halo, {guru?.nama}. Silakan lakukan presensi mandiri di bawah.
         </p>
       </div>
 
@@ -214,7 +214,7 @@ export function AbsenSaya() {
           ) : (
             <LogIn className="w-5 h-5 mr-2" />
           )}
-          {sudahMasuk ? "Sudah Absen Masuk" : "Absen Masuk"}
+          {sudahMasuk ? "Sudah Presensi Masuk" : "Presensi Masuk"}
         </Button>
 
         <Button
@@ -229,18 +229,18 @@ export function AbsenSaya() {
           ) : (
             <LogOut className="w-5 h-5 mr-2" />
           )}
-          {sudahPulang ? "Sudah Absen Pulang" : "Absen Pulang"}
+          {sudahPulang ? "Sudah Presensi Pulang" : "Presensi Pulang"}
         </Button>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Riwayat Absen Hari Ini</CardTitle>
+          <CardTitle className="text-base">Riwayat Presensi Hari Ini</CardTitle>
         </CardHeader>
         <CardContent>
           {absensiHariIni.length === 0 ? (
             <p className="text-sm text-muted-foreground">
-              Belum ada absen hari ini.
+              Belum ada presensi hari ini.
             </p>
           ) : (
             <ul className="space-y-2">

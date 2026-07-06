@@ -226,7 +226,7 @@ export function RekapSiswa() {
     ]);
 
     const csvContent = [
-      `Rekap Absensi EduScan`,
+      `Rekap Presensi EduScan`,
       `Periode: ${start} s/d ${end}`,
       `Kelas: ${selectedKelas || "Semua Kelas"}`,
       "",
@@ -238,7 +238,7 @@ export function RekapSiswa() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `rekap-absensi-${start}-${end}.csv`;
+    a.download = `rekap-presensi-${start}-${end}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -261,7 +261,7 @@ export function RekapSiswa() {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-foreground">Rekap Absensi</h2>
+          <h2 className="text-2xl font-bold text-foreground">Rekap Presensi</h2>
           <p className="text-muted-foreground">
             Laporan kehadiran siswa berdasarkan periode
           </p>
@@ -507,7 +507,7 @@ export function RekapSiswa() {
               {filteredRekap.length === 0 && !loading && (
                 <div className="text-center py-12">
                   <p className="text-muted-foreground">
-                    Tidak ada data absensi pada periode ini
+                    Tidak ada data presensi pada periode ini
                   </p>
                 </div>
               )}

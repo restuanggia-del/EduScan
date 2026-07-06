@@ -152,7 +152,7 @@ export function DaruratGuru() {
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-sm text-muted-foreground">
-            Tidak ada notifikasi WA yang dikirim untuk absensi guru/kepala
+            Tidak ada notifikasi WA yang dikirim untuk presensi guru/kepala
             sekolah — hasil hanya masuk ke rekap internal.
           </p>
 
@@ -185,7 +185,7 @@ export function DaruratGuru() {
                   : "border-input hover:bg-muted",
               )}
             >
-              Reaktif — Selesaikan Absensi
+              Reaktif — Selesaikan Presensi
             </button>
           </div>
 
@@ -238,7 +238,7 @@ export function DaruratGuru() {
             {rows.length === 0 && (
               <div className="text-center py-8 text-muted-foreground">
                 <CheckSquare className="w-10 h-10 mx-auto mb-2 opacity-50" />
-                Semua guru/KS sudah tercatat absen hari ini.
+                Semua guru/KS sudah tercatat presensi hari ini.
               </div>
             )}
 

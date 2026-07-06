@@ -169,9 +169,9 @@ export function Pengaturan() {
             <School className="w-4 h-4 mr-2" />
             Umum
           </TabsTrigger>
-          <TabsTrigger value="absensi" className="cursor-pointer">
+          <TabsTrigger value="presensi" className="cursor-pointer">
             <Clock className="w-4 h-4 mr-2" />
-            Absensi
+            Presensi
           </TabsTrigger>
           <TabsTrigger value="whatsapp" className="cursor-pointer">
             <MessageSquare className="w-4 h-4 mr-2" />
@@ -179,7 +179,6 @@ export function Pengaturan() {
           </TabsTrigger>
         </TabsList>
 
-        {/* Tab Umum */}
         <TabsContent value="umum" className="space-y-6">
           <Card>
             <CardHeader>
@@ -204,12 +203,12 @@ export function Pengaturan() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="absensi" className="space-y-6">
+        <TabsContent value="presensi" className="space-y-6">
           <Card>
             <CardHeader>
               <CardTitle>Jam Operasional</CardTitle>
               <CardDescription>
-                Atur waktu batas absensi masuk dan pulang
+                Atur waktu batas presensi masuk dan pulang
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -254,20 +253,20 @@ export function Pengaturan() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Aturan Absensi</CardTitle>
+              <CardTitle>Aturan Presensi</CardTitle>
               <CardDescription>
-                Konfigurasi aturan validasi absensi
+                Konfigurasi aturan validasi presensi
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               {[
                 {
-                  label: "Cegah Absen Masuk Ganda",
-                  desc: "Siswa tidak bisa absen masuk dua kali dalam sehari",
+                  label: "Cegah Presensi Masuk Ganda",
+                  desc: "Siswa tidak bisa presensi masuk dua kali dalam sehari",
                 },
                 {
-                  label: "Cegah Absen Pulang Ganda",
-                  desc: "Siswa tidak bisa absen pulang dua kali dalam sehari",
+                  label: "Cegah Presensi Pulang Ganda",
+                  desc: "Siswa tidak bisa presensi pulang dua kali dalam sehari",
                 },
                 {
                   label: "Deteksi Keterlambatan Otomatis",
@@ -375,12 +374,12 @@ export function Pengaturan() {
                 {
                   key: "notifMasuk",
                   label: "Notifikasi Masuk Sekolah",
-                  desc: "Dikirim saat siswa berhasil absen masuk",
+                  desc: "Dikirim saat siswa berhasil presensi masuk",
                 },
                 {
                   key: "notifPulang",
                   label: "Notifikasi Pulang Sekolah",
-                  desc: "Dikirim saat siswa berhasil absen pulang",
+                  desc: "Dikirim saat siswa berhasil presensi pulang",
                 },
                 {
                   key: "notifTerlambat",
@@ -420,7 +419,7 @@ export function Pengaturan() {
                 <code className="bg-muted px-1 rounded text-xs">[nama]</code>{" "}
                 untuk nama siswa dan{" "}
                 <code className="bg-muted px-1 rounded text-xs">[jam]</code>{" "}
-                untuk jam absensi.
+                untuk jam presensi.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">

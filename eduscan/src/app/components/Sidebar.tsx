@@ -25,7 +25,7 @@ const allMenuItems = [
   },
   {
     id: "absen-saya",
-    label: "Absen Saya",
+    label: "Presensi Saya",
     icon: Clock,
     roles: ["guru_biasa", "guru_wali_kelas"],
   },
@@ -55,13 +55,13 @@ const allMenuItems = [
   },
   {
     id: "scan",
-    label: "Scan Absensi",
+    label: "Scan Presensi",
     icon: Scan,
     roles: ["kepala_sekolah", "tu", "guru_wali_kelas"],
   },
   {
     id: "rekap",
-    label: "Rekap Absensi",
+    label: "Rekap Presensi",
     icon: FileText,
     roles: ["kepala_sekolah", "tu", "guru_wali_kelas"],
   },

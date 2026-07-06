@@ -132,7 +132,7 @@ export function ScanGuru() {
       .order("waktu_scan", { ascending: false });
 
     if (error) {
-      console.error("Gagal memuat absensi guru hari ini:", error.message);
+      console.error("Gagal memuat presensi guru hari ini:", error.message);
       return;
     }
 
@@ -199,7 +199,7 @@ export function ScanGuru() {
 
   const handleAbsenMasukClick = async (target: Target) => {
     if (sudahAbsen(target.key, "masuk")) {
-      toast.error(`${target.nama} sudah absen masuk hari ini!`);
+      toast.error(`${target.nama} sudah presensi masuk hari ini!`);
       return;
     }
 
@@ -235,11 +235,11 @@ export function ScanGuru() {
 
   const handleAbsenPulangClick = async (target: Target) => {
     if (!sudahAbsen(target.key, "masuk")) {
-      toast.error(`${target.nama} belum absen masuk hari ini!`);
+      toast.error(`${target.nama} belum presensi masuk hari ini!`);
       return;
     }
     if (sudahAbsen(target.key, "pulang")) {
-      toast.error(`${target.nama} sudah absen pulang hari ini!`);
+      toast.error(`${target.nama} sudah presensi pulang hari ini!`);
       return;
     }
     await saveAbsensi(target, "pulang", "pulang");
@@ -265,7 +265,7 @@ export function ScanGuru() {
     setSubmitting(false);
 
     if (error) {
-      toast.error("Gagal mencatat absensi: " + error.message);
+      toast.error("Gagal mencatat presensi: " + error.message);
       return;
     }
 
@@ -286,11 +286,11 @@ export function ScanGuru() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-foreground">
-            Scan Absensi Guru
+            Scan Presensi Guru
           </h2>
           <p className="text-muted-foreground">
-            Absensi untuk Guru & Kepala Sekolah. Status Hadir/Terlambat dihitung
-            otomatis berdasarkan jadwal mengajar.
+            Presensi untuk Guru & Kepala Sekolah. Status Hadir/Terlambat
+            dihitung otomatis berdasarkan jadwal mengajar.
           </p>
         </div>
         <Button
@@ -369,7 +369,7 @@ export function ScanGuru() {
                               <CheckCircle className="w-4 h-4 mr-1" /> Masuk
                             </>
                           ) : (
-                            "Absen Masuk"
+                            "Presensi Masuk"
                           )}
                         </Button>
                         <Button
@@ -384,7 +384,7 @@ export function ScanGuru() {
                               <CheckCircle className="w-4 h-4 mr-1" /> Pulang
                             </>
                           ) : (
-                            "Absen Pulang"
+                            "Presensi Pulang"
                           )}
                         </Button>
                       </div>
@@ -404,7 +404,7 @@ export function ScanGuru() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Riwayat Absensi Hari Ini</CardTitle>
+          <CardTitle>Riwayat Presensi Hari Ini</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
@@ -466,7 +466,7 @@ export function ScanGuru() {
             {riwayatRows.length === 0 && (
               <div className="text-center py-12">
                 <p className="text-muted-foreground">
-                  Belum ada absensi hari ini
+                  Belum ada presensi hari ini
                 </p>
               </div>
             )}
@@ -487,8 +487,8 @@ export function ScanGuru() {
             <DialogDescription>
               {pendingTarget?.peran === "kepala_sekolah" ||
               pendingTarget?.peran === "tu"
-                ? "Kepala Sekolah/TU tidak punya jadwal otomatis. Pilih status absensi secara manual."
-                : `${pendingTarget?.nama} tidak ada jadwal mengajar hari ini. Pilih status absensi secara manual.`}
+                ? "Kepala Sekolah/TU tidak punya jadwal otomatis. Pilih status presensi secara manual."
+                : `${pendingTarget?.nama} tidak ada jadwal mengajar hari ini. Pilih status presensi secara manual.`}
             </DialogDescription>
           </DialogHeader>
 
@@ -514,7 +514,7 @@ export function ScanGuru() {
             disabled={submitting}
             className="w-full cursor-pointer"
           >
-            {submitting ? "Menyimpan..." : "Simpan Absensi"}
+            {submitting ? "Menyimpan..." : "Simpan Presensi"}
           </Button>
         </DialogContent>
       </Dialog>

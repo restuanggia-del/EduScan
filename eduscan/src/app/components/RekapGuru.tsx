@@ -177,7 +177,7 @@ export function RekapGuru() {
     ]);
 
     const csvContent = [
-      `Rekap Absensi Guru & Kepala Sekolah - EduScan`,
+      `Rekap Presensi Guru & Kepala Sekolah - EduScan`,
       `Periode: ${start} s/d ${end}`,
       "",
       headers.join(","),
@@ -188,7 +188,7 @@ export function RekapGuru() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `rekap-absensi-guru-${start}-${end}.csv`;
+    a.download = `rekap-presensi-guru-${start}-${end}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -212,7 +212,7 @@ export function RekapGuru() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-foreground">
-            Rekap Absensi Guru & Kepala Sekolah
+            Rekap Presensi Guru & Kepala Sekolah
           </h2>
           <p className="text-muted-foreground">
             Laporan kehadiran guru & KS berdasarkan periode
@@ -443,7 +443,7 @@ export function RekapGuru() {
               {filteredRekap.length === 0 && !loading && (
                 <div className="text-center py-12">
                   <p className="text-muted-foreground">
-                    Tidak ada data absensi pada periode ini
+                    Tidak ada data presensi pada periode ini
                   </p>
                 </div>
               )}

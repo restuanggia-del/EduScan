@@ -320,7 +320,7 @@ export function DaruratSiswa() {
                   : "border-input hover:bg-muted",
               )}
             >
-              Reaktif — Selesaikan Absensi
+              Reaktif — Selesaikan Presensi
             </button>
           </div>
 
@@ -397,7 +397,7 @@ export function DaruratSiswa() {
             {rows.length === 0 && (
               <div className="text-center py-8 text-muted-foreground">
                 <CheckSquare className="w-10 h-10 mx-auto mb-2 opacity-50" />
-                Semua siswa di cakupan ini sudah tercatat absen hari ini.
+                Semua siswa di cakupan ini sudah tercatat presensi hari ini.
               </div>
             )}
 

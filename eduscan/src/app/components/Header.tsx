@@ -303,7 +303,7 @@ export function Header({
     (absensiData as any[])?.forEach((a) => {
       if (a.siswa?.nama?.toLowerCase().includes(q.toLowerCase())) {
         results.push({
-          type: "Absensi",
+          type: "Presensi",
           label: a.siswa?.nama,
           sub: `${a.status} • ${a.siswa?.kelas} • hari ini`,
           page: "rekap",

@@ -104,7 +104,7 @@ export function ScanSiswa() {
       .order("waktu_scan", { ascending: false });
 
     if (error) {
-      console.error("Error fetching absensi:", error.message);
+      console.error("Error fetching presensi:", error.message);
       return;
     }
 
@@ -251,7 +251,7 @@ export function ScanSiswa() {
 
     const sudahAbsen = existing && existing.length > 0;
     if (sudahAbsen) {
-      toast.error(`${siswa.nama} sudah tercatat absen hari ini!`);
+      toast.error(`${siswa.nama} sudah tercatat presensi hari ini!`);
       setManualLoading(false);
       return;
     }
@@ -265,7 +265,7 @@ export function ScanSiswa() {
     });
 
     if (error) {
-      toast.error("Gagal mencatat absensi: " + error.message);
+      toast.error("Gagal mencatat presensi: " + error.message);
     } else {
       toast.success(
         status === "hadir"
@@ -390,14 +390,14 @@ export function ScanSiswa() {
 
       if (mode === "masuk") {
         if (sudahMasuk) {
-          setErrorMessage(`${siswa.nama} sudah absen masuk hari ini!`);
+          setErrorMessage(`${siswa.nama} sudah presensi masuk hari ini!`);
           return;
         }
 
         const menitBatasMasuk = toMenit(jamBatasMasuk);
         if (menitSekarang > menitBatasMasuk + 120) {
           setErrorMessage(
-            `Tidak bisa absen masuk! Sudah melewati batas waktu toleransi (${jamBatasMasuk} WIB + 2 jam).`,
+            `Tidak bisa presensi masuk! Sudah melewati batas waktu toleransi (${jamBatasMasuk} WIB + 2 jam).`,
           );
           return;
         }
@@ -412,7 +412,7 @@ export function ScanSiswa() {
         });
 
         if (error) {
-          setErrorMessage("Gagal mencatat absensi, silakan coba lagi.");
+          setErrorMessage("Gagal mencatat presensi, silakan coba lagi.");
           return;
         }
 
@@ -431,7 +431,7 @@ export function ScanSiswa() {
         setLastScan(newRecord);
         setShowSuccess(true);
         playSuccessSound();
-        toast.success(`${siswa.nama} berhasil absen masuk!`);
+        toast.success(`${siswa.nama} berhasil presensi masuk!`);
 
         if (whatsappEnabled && siswa.no_wa) {
           await sendWhatsAppNotification(
@@ -449,18 +449,18 @@ export function ScanSiswa() {
         setTimeout(() => setShowSuccess(false), 5000);
       } else {
         if (!sudahMasuk) {
-          setErrorMessage(`${siswa.nama} belum absen masuk hari ini!`);
+          setErrorMessage(`${siswa.nama} belum presensi masuk hari ini!`);
           return;
         }
         if (sudahPulang) {
-          setErrorMessage(`${siswa.nama} sudah absen pulang hari ini!`);
+          setErrorMessage(`${siswa.nama} sudah presensi pulang hari ini!`);
           return;
         }
 
         const menitBatasPulang = toMenit(jamBatasPulang);
         if (menitSekarang < menitBatasPulang) {
           setErrorMessage(
-            `Belum bisa absen pulang! Jam pulang mulai ${jamBatasPulang} WIB. Sekarang baru ${jamSekarang} WIB.`,
+            `Belum bisa presensi pulang! Jam pulang mulai ${jamBatasPulang} WIB. Sekarang baru ${jamSekarang} WIB.`,
           );
           return;
         }
@@ -473,7 +473,7 @@ export function ScanSiswa() {
         });
 
         if (error) {
-          setErrorMessage("Gagal mencatat absensi, silakan coba lagi.");
+          setErrorMessage("Gagal mencatat presensi, silakan coba lagi.");
           return;
         }
 
@@ -492,7 +492,7 @@ export function ScanSiswa() {
         setLastScan(updatedRecord);
         setShowSuccess(true);
         playSuccessSound();
-        toast.success(`${siswa.nama} berhasil absen pulang!`);
+        toast.success(`${siswa.nama} berhasil presensi pulang!`);
 
         if (whatsappEnabled && siswa.no_wa) {
           await sendWhatsAppNotification(
@@ -586,9 +586,9 @@ export function ScanSiswa() {
   return (
     <div className="p-6 space-y-6">
       <div>
-        <h2 className="text-2xl font-bold text-foreground">Scan Absensi</h2>
+        <h2 className="text-2xl font-bold text-foreground">Scan Presensi</h2>
         <p className="text-muted-foreground">
-          Scan QR Code siswa untuk absensi masuk dan pulang
+          Scan QR Code siswa untuk presensi masuk dan pulang
         </p>
       </div>
 
@@ -645,7 +645,7 @@ export function ScanSiswa() {
             <Card>
               <CardHeader>
                 <div className="flex items-center justify-between">
-                  <CardTitle>Mode Absensi</CardTitle>
+                  <CardTitle>Mode Presensi</CardTitle>
                   <div className="flex gap-2">
                     <Button
                       variant={mode === "masuk" ? "default" : "outline"}
@@ -655,7 +655,7 @@ export function ScanSiswa() {
                       }}
                       className="cursor-pointer"
                     >
-                      Absen Masuk
+                      Presensi Masuk
                     </Button>
                     <Button
                       variant={mode === "pulang" ? "default" : "outline"}
@@ -665,7 +665,7 @@ export function ScanSiswa() {
                       }}
                       className="cursor-pointer"
                     >
-                      Absen Pulang
+                      Presensi Pulang
                     </Button>
                   </div>
                 </div>
@@ -680,7 +680,9 @@ export function ScanSiswa() {
                       </p>
                       <p className="text-xs text-muted-foreground mt-1">
                         Mode:{" "}
-                        {mode === "masuk" ? "Absen Masuk" : "Absen Pulang"}
+                        {mode === "masuk"
+                          ? "Presensi Masuk"
+                          : "Presensi Pulang"}
                       </p>
                     </div>
                   </div>
@@ -842,7 +844,7 @@ export function ScanSiswa() {
                   </div>
                   <div className="flex-1">
                     <h3 className="text-xl font-bold text-primary mb-4">
-                      ✓ Absensi Berhasil
+                      ✓ Presensi Berhasil
                     </h3>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
@@ -965,8 +967,8 @@ export function ScanSiswa() {
                       : showManual
                         ? "📝 Input Manual"
                         : mode === "masuk"
-                          ? "🟢 Absen Masuk"
-                          : "🔵 Absen Pulang"}
+                          ? "🟢 Presensi Masuk"
+                          : "🔵 Presensi Pulang"}
                   </p>
                 </div>
               </div>
@@ -986,7 +988,7 @@ export function ScanSiswa() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Riwayat Absensi Hari Ini</CardTitle>
+          <CardTitle>Riwayat Presensi Hari Ini</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
@@ -1040,7 +1042,7 @@ export function ScanSiswa() {
             {todayRecords.length === 0 && (
               <div className="text-center py-12">
                 <p className="text-muted-foreground">
-                  Belum ada absensi hari ini
+                  Belum ada presensi hari ini
                 </p>
               </div>
             )}

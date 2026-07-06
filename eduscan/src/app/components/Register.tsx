@@ -87,7 +87,7 @@ export function Register({ onBack }: { onBack: () => void }) {
           </div>
           <h1 className="text-2xl font-bold">EduScan</h1>
           <p className="text-muted-foreground text-sm">
-            Sistem Absensi Sekolah Berbasis QR Code
+            Sistem Presensi Sekolah Berbasis QR Code
           </p>
         </div>
 
