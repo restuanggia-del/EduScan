@@ -8,6 +8,7 @@ import { supabase } from "../../lib/supabaseClient";
 import { useAuth } from "../../lib/AuthContext";
 import { cn } from "./ui/utils";
 import { printElement } from "../../lib/printWindow";
+import { downloadRekapPdf } from "../../lib/exportTablePdf";
 
 interface RekapData {
   siswaId: string;
@@ -246,7 +247,42 @@ export function RekapSiswa() {
   };
 
   const handleExportPDF = () => {
-    printElement(printRef.current, "Rekap Presensi Siswa - EduScan");
+    const { start, end } = getDateRange();
+
+    downloadRekapPdf({
+      title: "Rekap Presensi Siswa",
+      subtitleLines: [
+        `Periode: ${filterLabels[filterType]} (${start} s/d ${end}) \u00b7 Kelas: ${
+          selectedKelas || "Semua Kelas"
+        } \u00b7 Dicetak: ${new Date().toLocaleDateString("id-ID")}`,
+        `Total Hadir: ${totalHadir} \u00b7 Terlambat: ${totalTerlambat} \u00b7 Izin: ${totalIzin} \u00b7 Sakit: ${totalSakit} \u00b7 Alfa: ${totalAlfa}`,
+      ],
+      head: [
+        "No",
+        "NISN",
+        "Nama",
+        "Kelas",
+        "Hadir",
+        "Terlambat",
+        "Izin",
+        "Sakit",
+        "Alfa",
+        "Total",
+      ],
+      body: filteredRekap.map((r, i) => [
+        i + 1,
+        r.nisn,
+        r.nama,
+        r.kelas,
+        r.hadir,
+        r.terlambat,
+        r.izin,
+        r.sakit,
+        r.alfa,
+        r.total,
+      ]),
+      filename: `rekap-presensi-siswa-${start}-${end}.pdf`,
+    });
   };
 
   const { start, end } = getDateRange();

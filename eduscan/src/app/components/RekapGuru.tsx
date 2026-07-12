@@ -6,6 +6,7 @@ import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { supabase } from "../../lib/supabaseClient";
 import { cn } from "./ui/utils";
+import { downloadRekapPdf } from "../../lib/exportTablePdf";
 
 interface RekapGuruData {
   key: string;
@@ -194,7 +195,42 @@ export function RekapGuru() {
   };
 
   const handleExportPDF = () => {
-    window.print();
+    const { start, end } = getDateRange();
+
+    downloadRekapPdf({
+      title: "Rekap Presensi Guru & Kepala Sekolah",
+      subtitleLines: [
+        `Periode: ${filterLabels[filterType]} (${start} s/d ${end}) \u00b7 Dicetak: ${new Date().toLocaleDateString("id-ID")}`,
+        `Total Hadir: ${totalHadir} \u00b7 Terlambat: ${totalTerlambat} \u00b7 Izin: ${totalIzin} \u00b7 Sakit: ${totalSakit} \u00b7 Alfa: ${totalAlfa} \u00b7 TS: ${totalTs}`,
+      ],
+      head: [
+        "No",
+        "NIP",
+        "Nama",
+        "Peran",
+        "Hadir",
+        "Terlambat",
+        "Izin",
+        "Sakit",
+        "Alfa",
+        "TS",
+        "Total",
+      ],
+      body: filteredRekap.map((r, i) => [
+        i + 1,
+        r.nip,
+        r.nama,
+        peranLabel[r.peran] || r.peran,
+        r.hadir,
+        r.terlambat,
+        r.izin,
+        r.sakit,
+        r.alfa,
+        r.ts,
+        r.total,
+      ]),
+      filename: `rekap-presensi-guru-${start}-${end}.pdf`,
+    });
   };
 
   const { start, end } = getDateRange();
