@@ -209,7 +209,7 @@ export function RekapGuru() {
 
   return (
     <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between no-print">
         <div>
           <h2 className="text-2xl font-bold text-foreground">
             Rekap Presensi Guru & Kepala Sekolah
@@ -234,7 +234,7 @@ export function RekapGuru() {
         </div>
       </div>
 
-      <Card>
+      <Card className="no-print">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Filter className="w-4 h-4" />
@@ -286,7 +286,7 @@ export function RekapGuru() {
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-6 gap-4 no-print">
         {[
           {
             label: "Hadir",
@@ -331,7 +331,7 @@ export function RekapGuru() {
       </div>
 
       <Card>
-        <CardHeader>
+        <CardHeader className="no-print">
           <div className="flex items-center justify-between">
             <CardTitle>Data Rekap Guru & KS</CardTitle>
             <div className="relative w-72">
@@ -352,6 +352,20 @@ export function RekapGuru() {
             </div>
           ) : (
             <div className="overflow-x-auto print-area">
+              <div className="print-header">
+                <h3 className="font-bold text-lg">
+                  Rekap Presensi Guru & Kepala Sekolah
+                </h3>
+                <p className="text-sm">
+                  Periode: {filterLabels[filterType]} ({start} s/d {end})
+                  &middot; Dicetak: {new Date().toLocaleDateString("id-ID")}
+                </p>
+                <p className="text-sm">
+                  Total Hadir: {totalHadir} &middot; Terlambat: {totalTerlambat}{" "}
+                  &middot; Izin: {totalIzin} &middot; Sakit: {totalSakit}{" "}
+                  &middot; Alfa: {totalAlfa} &middot; TS: {totalTs}
+                </p>
+              </div>
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-border">

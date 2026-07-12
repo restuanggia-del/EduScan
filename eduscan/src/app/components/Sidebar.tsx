@@ -82,7 +82,7 @@ export function Sidebar({ currentPage, onNavigate }: SidebarProps) {
   );
 
   return (
-    <div className="w-64 h-screen flex-shrink-0 bg-white border-r border-border flex flex-col sticky top-0 self-start">
+    <div className="w-64 h-screen flex-shrink-0 bg-white border-r border-border flex flex-col sticky top-0 self-start no-print">
       <div className="p-6 border-b border-border">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 bg-gradient-to-br from-primary to-secondary rounded-lg flex items-center justify-center">

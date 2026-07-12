@@ -324,7 +324,7 @@ export function Header({
 
   return (
     <>
-      <header className="sticky top-0 z-50 h-16 bg-white/95 backdrop-blur border-b border-border px-6 flex items-center justify-between">
+      <header className="sticky top-0 z-50 h-16 bg-white/95 backdrop-blur border-b border-border px-6 flex items-center justify-between no-print">
         <div className="flex-1 max-w-xl" ref={searchRef}>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />

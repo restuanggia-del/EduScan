@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Download, FileText, Search, Filter } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
@@ -7,6 +7,7 @@ import { Label } from "./ui/label";
 import { supabase } from "../../lib/supabaseClient";
 import { useAuth } from "../../lib/AuthContext";
 import { cn } from "./ui/utils";
+import { printElement } from "../../lib/printWindow";
 
 interface RekapData {
   siswaId: string;
@@ -37,6 +38,7 @@ export function RekapSiswa() {
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [kelasSendiri, setKelasSendiri] = useState<string | null>(null);
+  const printRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     initData();
@@ -244,7 +246,7 @@ export function RekapSiswa() {
   };
 
   const handleExportPDF = () => {
-    window.print();
+    printElement(printRef.current, "Rekap Presensi Siswa - EduScan");
   };
 
   const { start, end } = getDateRange();
@@ -259,7 +261,7 @@ export function RekapSiswa() {
 
   return (
     <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between no-print">
         <div>
           <h2 className="text-2xl font-bold text-foreground">Rekap Presensi</h2>
           <p className="text-muted-foreground">
@@ -282,7 +284,7 @@ export function RekapSiswa() {
         </div>
       </div>
 
-      <Card>
+      <Card className="no-print">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Filter className="w-4 h-4" />
@@ -363,7 +365,7 @@ export function RekapSiswa() {
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 no-print">
         {[
           {
             label: "Hadir",
@@ -403,7 +405,7 @@ export function RekapSiswa() {
       </div>
 
       <Card>
-        <CardHeader>
+        <CardHeader className="no-print">
           <div className="flex items-center justify-between">
             <CardTitle>Data Rekap Siswa</CardTitle>
             <div className="relative w-72">
@@ -423,7 +425,20 @@ export function RekapSiswa() {
               <p className="text-muted-foreground">Memuat data rekap...</p>
             </div>
           ) : (
-            <div className="overflow-x-auto print-area">
+            <div ref={printRef} className="overflow-x-auto print-area">
+              <div className="print-header">
+                <h3 className="font-bold text-lg">Rekap Presensi Siswa</h3>
+                <p className="text-sm">
+                  Periode: {filterLabels[filterType]} ({start} s/d {end})
+                  &middot; Kelas: {selectedKelas || "Semua Kelas"} &middot;
+                  Dicetak: {new Date().toLocaleDateString("id-ID")}
+                </p>
+                <p className="text-sm">
+                  Total Hadir: {totalHadir} &middot; Terlambat: {totalTerlambat}{" "}
+                  &middot; Izin: {totalIzin} &middot; Sakit: {totalSakit}{" "}
+                  &middot; Alfa: {totalAlfa}
+                </p>
+              </div>
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-border">
