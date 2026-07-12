@@ -111,6 +111,16 @@ export function Header({
       .limit(5);
 
     if (data) {
+      // load read ids from localStorage for this user (persist per-browser)
+      const readKey = `eduscan_reads_${user?.id || "guest"}`;
+      let readIds: string[] = [];
+      try {
+        const raw = localStorage.getItem(readKey);
+        if (raw) readIds = JSON.parse(raw);
+      } catch (e) {
+        // ignore parse errors
+      }
+
       setNotifications(
         (data as any[]).map((a) => {
           const jam = (() => {
@@ -129,7 +139,7 @@ export function Header({
             id: a.id,
             pesan: `${a.siswa?.nama} (${a.siswa?.kelas}) — ${statusText[a.status] || a.status} jam ${jam}`,
             waktu: jam,
-            dibaca: false,
+            dibaca: readIds.includes(String(a.id)),
           };
         }),
       );
@@ -221,12 +231,15 @@ export function Header({
 
   const unreadCount = notifications.filter((n) => !n.dibaca).length;
   const markAllAsRead = () => {
-    setNotifications((prev) =>
-      prev.map((notif) => ({
-        ...notif,
-        dibaca: true,
-      })),
-    );
+    setNotifications((prev) => {
+      const all = prev.map((notif) => ({ ...notif, dibaca: true }));
+      try {
+        const readKey = `eduscan_reads_${user?.id || "guest"}`;
+        const ids = all.map((n) => String(n.id));
+        localStorage.setItem(readKey, JSON.stringify(ids));
+      } catch (e) {}
+      return all;
+    });
   };
 
   const [searchResults, setSearchResults] = useState<
