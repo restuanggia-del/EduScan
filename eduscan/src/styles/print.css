@@ -1,0 +1,147 @@
+@media print {
+  @page {
+    margin: 12mm;
+  }
+
+  html,
+  body {
+    height: auto !important;
+    overflow: visible !important;
+    background: #ffffff !important;
+  }
+
+  body * {
+    visibility: hidden;
+  }
+
+  .print-area,
+  .print-area * {
+    visibility: visible;
+  }
+
+  .print-area {
+    margin: 0;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  .h-screen,
+  .min-h-0,
+  .overflow-y-auto,
+  .overflow-x-auto {
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  .app-shell,
+  .app-shell-inner,
+  .app-main {
+    display: block !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  body *:has(.print-area) {
+    display: block !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  .print-qr-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 14px !important;
+  }
+
+  .print-qr-card {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .print-qr-page-break {
+    break-after: page;
+    page-break-after: always;
+  }
+
+  .print-qr-page + .print-qr-page {
+    break-before: page;
+    page-break-before: always;
+  }
+}
+
+@media print and (orientation: landscape) {
+  .print-qr-grid {
+    grid-template-columns: repeat(4, 1fr) !important;
+  }
+}
+
+@media print {
+  .print-qr-card .qr-card {
+    width: 100% !important;
+  }
+
+  .print-qr-card .qr-card-photo {
+    width: 72px !important;
+    height: 72px !important;
+  }
+
+  .print-qr-card .qr-card-qr svg {
+    width: 96px !important;
+    height: 96px !important;
+  }
+
+  .print-qr-card .qr-card-body {
+    padding: 10px !important;
+  }
+
+  .print-qr-card .qr-card-id {
+    font-size: 9px !important;
+    word-break: break-all;
+  }
+
+  .print-area table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    font-size: 11px !important;
+  }
+
+  .print-area thead {
+    display: table-header-group;
+  }
+
+  .print-area tr {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .print-header {
+    display: block !important;
+    margin-bottom: 12px;
+  }
+}
+
+.print-header {
+  display: none;
+}
+
+.print-qr-page {
+  margin-bottom: 32px;
+  padding-bottom: 24px;
+  border-bottom: 1px dashed var(--border, #e2e8f0);
+}
+
+.print-qr-page:last-child {
+  border-bottom: none;
+}
+
+@media print {
+  .print-qr-page {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+  }
+}
