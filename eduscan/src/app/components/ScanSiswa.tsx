@@ -769,8 +769,8 @@ export function ScanSiswa() {
                     </Select>
                   </div>
 
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <div className="relative flex items-center">
+                    <Search className="absolute left-3 inset-y-0 my-auto w-4 h-4 text-muted-foreground" />
                     <Input
                       placeholder="Cari nama, NISN, atau kelas..."
                       className="pl-10"
