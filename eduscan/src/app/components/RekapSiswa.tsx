@@ -9,6 +9,7 @@ import { useAuth } from "../../lib/AuthContext";
 import { cn } from "./ui/utils";
 import { printElement } from "../../lib/printWindow";
 import { downloadRekapPdf } from "../../lib/exportTablePdf";
+import { downloadRekapExcel } from "../../lib/exportExcel";
 
 interface RekapData {
   siswaId: string;
@@ -201,49 +202,44 @@ export function RekapSiswa() {
   const totalSakit = rekapData.reduce((acc, r) => acc + r.sakit, 0);
   const totalAlfa = rekapData.reduce((acc, r) => acc + r.alfa, 0);
 
-  const handleExportExcel = () => {
+  const handleExportExcel = async () => {
     const { start, end } = getDateRange();
-    const headers = [
-      "No",
-      "NISN",
-      "Nama",
-      "Kelas",
-      "Hadir",
-      "Terlambat",
-      "Izin",
-      "Sakit",
-      "Alfa",
-      "Total",
-    ];
-    const rows = filteredRekap.map((r, i) => [
-      i + 1,
-      r.nisn,
-      r.nama,
-      r.kelas,
-      r.hadir,
-      r.terlambat,
-      r.izin,
-      r.sakit,
-      r.alfa,
-      r.total,
-    ]);
 
-    const csvContent = [
-      `Rekap Presensi EduScan`,
-      `Periode: ${start} s/d ${end}`,
-      `Kelas: ${selectedKelas || "Semua Kelas"}`,
-      "",
-      headers.join(","),
-      ...rows.map((r) => r.join(",")),
-    ].join("\n");
-
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `rekap-presensi-${start}-${end}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+    await downloadRekapExcel({
+      title: "Rekap Presensi Siswa - EduScan",
+      subtitleLines: [
+        `Periode: ${filterLabels[filterType]} (${start} s/d ${end}) \u00b7 Kelas: ${
+          selectedKelas || "Semua Kelas"
+        } \u00b7 Diunduh: ${new Date().toLocaleDateString("id-ID")}`,
+        `Total Hadir: ${totalHadir} \u00b7 Terlambat: ${totalTerlambat} \u00b7 Izin: ${totalIzin} \u00b7 Sakit: ${totalSakit} \u00b7 Alfa: ${totalAlfa}`,
+      ],
+      head: [
+        "No",
+        "NISN",
+        "Nama",
+        "Kelas",
+        "Hadir",
+        "Terlambat",
+        "Izin",
+        "Sakit",
+        "Alfa",
+        "Total",
+      ],
+      body: filteredRekap.map((r, i) => [
+        i + 1,
+        r.nisn,
+        r.nama,
+        r.kelas,
+        r.hadir,
+        r.terlambat,
+        r.izin,
+        r.sakit,
+        r.alfa,
+        r.total,
+      ]),
+      filename: `rekap-presensi-siswa-${start}-${end}.xlsx`,
+      sheetName: "Rekap Siswa",
+    });
   };
 
   const handleExportPDF = () => {

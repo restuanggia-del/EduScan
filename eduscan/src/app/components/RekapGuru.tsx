@@ -7,6 +7,7 @@ import { Label } from "./ui/label";
 import { supabase } from "../../lib/supabaseClient";
 import { cn } from "./ui/utils";
 import { downloadRekapPdf } from "../../lib/exportTablePdf";
+import { downloadRekapExcel } from "../../lib/exportExcel";
 
 interface RekapGuruData {
   key: string;
@@ -148,50 +149,44 @@ export function RekapGuru() {
   const totalAlfa = rekapData.reduce((acc, r) => acc + r.alfa, 0);
   const totalTs = rekapData.reduce((acc, r) => acc + r.ts, 0);
 
-  const handleExportExcel = () => {
+  const handleExportExcel = async () => {
     const { start, end } = getDateRange();
-    const headers = [
-      "No",
-      "NIP",
-      "Nama",
-      "Peran",
-      "Hadir",
-      "Terlambat",
-      "Izin",
-      "Sakit",
-      "Alfa",
-      "TS",
-      "Total",
-    ];
-    const rows = filteredRekap.map((r, i) => [
-      i + 1,
-      r.nip,
-      r.nama,
-      peranLabel[r.peran] || r.peran,
-      r.hadir,
-      r.terlambat,
-      r.izin,
-      r.sakit,
-      r.alfa,
-      r.ts,
-      r.total,
-    ]);
 
-    const csvContent = [
-      `Rekap Presensi Guru & Kepala Sekolah - EduScan`,
-      `Periode: ${start} s/d ${end}`,
-      "",
-      headers.join(","),
-      ...rows.map((r) => r.join(",")),
-    ].join("\n");
-
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `rekap-presensi-guru-${start}-${end}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+    await downloadRekapExcel({
+      title: "Rekap Presensi Guru & Kepala Sekolah - EduScan",
+      subtitleLines: [
+        `Periode: ${filterLabels[filterType]} (${start} s/d ${end}) \u00b7 Diunduh: ${new Date().toLocaleDateString("id-ID")}`,
+        `Total Hadir: ${totalHadir} \u00b7 Terlambat: ${totalTerlambat} \u00b7 Izin: ${totalIzin} \u00b7 Sakit: ${totalSakit} \u00b7 Alfa: ${totalAlfa} \u00b7 TS: ${totalTs}`,
+      ],
+      head: [
+        "No",
+        "NIP",
+        "Nama",
+        "Peran",
+        "Hadir",
+        "Terlambat",
+        "Izin",
+        "Sakit",
+        "Alfa",
+        "TS",
+        "Total",
+      ],
+      body: filteredRekap.map((r, i) => [
+        i + 1,
+        r.nip,
+        r.nama,
+        peranLabel[r.peran] || r.peran,
+        r.hadir,
+        r.terlambat,
+        r.izin,
+        r.sakit,
+        r.alfa,
+        r.ts,
+        r.total,
+      ]),
+      filename: `rekap-presensi-guru-${start}-${end}.xlsx`,
+      sheetName: "Rekap Guru",
+    });
   };
 
   const handleExportPDF = () => {
