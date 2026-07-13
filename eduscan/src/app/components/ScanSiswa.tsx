@@ -13,6 +13,13 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "./ui/select";
 import { cn } from "./ui/utils";
 import { supabase } from "../../lib/supabaseClient";
 import { toast } from "sonner";
@@ -51,6 +58,7 @@ export function ScanSiswa() {
   const [showManual, setShowManual] = useState(false);
   const [showDarurat, setShowDarurat] = useState(false);
   const [manualSearch, setManualSearch] = useState("");
+  const [selectedKelas, setSelectedKelas] = useState("");
   const [allSiswa, setAllSiswa] = useState<Siswa[]>([]);
   const [filteredSiswa, setFilteredSiswa] = useState<Siswa[]>([]);
   const [manualLoading, setManualLoading] = useState(false);
@@ -73,19 +81,26 @@ export function ScanSiswa() {
   }, []);
 
   useEffect(() => {
-    if (manualSearch.trim() === "") {
-      setFilteredSiswa(allSiswa);
-    } else {
-      setFilteredSiswa(
-        allSiswa.filter(
-          (s) =>
-            s.nama.toLowerCase().includes(manualSearch.toLowerCase()) ||
-            s.nisn.includes(manualSearch) ||
-            s.kelas.toLowerCase().includes(manualSearch.toLowerCase()),
-        ),
-      );
+    const search = manualSearch.trim().toLowerCase();
+
+    if (!selectedKelas) {
+      setFilteredSiswa([]);
+      return;
     }
-  }, [manualSearch, allSiswa]);
+
+    setFilteredSiswa(
+      allSiswa.filter((s) => {
+        const matchesKelas = s.kelas === selectedKelas;
+        const matchesSearch =
+          !search ||
+          s.nama.toLowerCase().includes(search) ||
+          s.nisn.includes(search) ||
+          s.kelas.toLowerCase().includes(search);
+
+        return matchesKelas && matchesSearch;
+      }),
+    );
+  }, [manualSearch, allSiswa, selectedKelas]);
 
   const fetchAllSiswa = async () => {
     const { data } = await supabase
@@ -730,14 +745,39 @@ export function ScanSiswa() {
                 <CardTitle>Input Manual Kehadiran</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Cari nama, NISN, atau kelas..."
-                    className="pl-10"
-                    value={manualSearch}
-                    onChange={(e) => setManualSearch(e.target.value)}
-                  />
+                <div className="grid gap-4 md:grid-cols-[1fr_280px]">
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-muted-foreground">
+                      Filter Kelas
+                    </label>
+                    <Select
+                      value={selectedKelas}
+                      onValueChange={(value) => setSelectedKelas(value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Pilih kelas" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Array.from(new Set(allSiswa.map((s) => s.kelas)))
+                          .sort()
+                          .map((kelas) => (
+                            <SelectItem key={kelas} value={kelas}>
+                              {kelas}
+                            </SelectItem>
+                          ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Cari nama, NISN, atau kelas..."
+                      className="pl-10"
+                      value={manualSearch}
+                      onChange={(e) => setManualSearch(e.target.value)}
+                    />
+                  </div>
                 </div>
 
                 <div className="space-y-2 max-h-[500px] overflow-y-auto">
