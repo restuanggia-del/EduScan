@@ -6,7 +6,7 @@ import { Button } from "./ui/button";
 import { Label } from "./ui/label";
 import { supabase } from "../../lib/supabaseClient";
 import { printElement } from "../../lib/printWindow";
-import { downloadCardsPdf } from "../../lib/exportPdf";
+import { downloadCardsPdf, openCardsPdfForPrint } from "../../lib/exportPdf";
 
 interface Student {
   id: string;
@@ -101,6 +101,7 @@ export function GenerateQR() {
   const [selectedStudents, setSelectedStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(true);
   const [downloadingPdf, setDownloadingPdf] = useState(false);
+  const [preparingPrint, setPreparingPrint] = useState(false);
   const printRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -150,8 +151,18 @@ export function GenerateQR() {
     setSelectedKelas("");
   };
 
-  const handlePrint = () => {
-    printElement(printRef.current, "Kartu QR Presensi Siswa - EduScan");
+  const handlePrint = async () => {
+    if (!printRef.current) return;
+    setPreparingPrint(true);
+    try {
+      await openCardsPdfForPrint(printRef.current, "landscape");
+    } catch (err) {
+      console.error("Gagal menyiapkan PDF untuk dicetak:", err);
+      const pesan = err instanceof Error ? err.message : String(err);
+      alert(`Gagal menyiapkan PDF untuk dicetak: ${pesan}`);
+    } finally {
+      setPreparingPrint(false);
+    }
   };
 
   const handleDownloadPdf = async () => {
@@ -284,9 +295,13 @@ export function GenerateQR() {
             </div>
             {selectedStudents.length > 0 && (
               <div className="flex gap-2">
-                <Button onClick={handlePrint} className="cursor-pointer">
+                <Button
+                  onClick={handlePrint}
+                  disabled={preparingPrint}
+                  className="cursor-pointer"
+                >
                   <Printer className="w-4 h-4" />
-                  Cetak
+                  {preparingPrint ? "Menyiapkan PDF..." : "Cetak"}
                 </Button>
                 <Button
                   variant="outline"

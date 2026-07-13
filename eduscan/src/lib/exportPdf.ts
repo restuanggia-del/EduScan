@@ -24,11 +24,10 @@ function waitForImages(root: HTMLElement): Promise<void> {
     return Promise.race([loadAll, timeout]);
 }
 
-export async function downloadCardsPdf(
+async function buildCardsPdf(
     sourceElement: HTMLElement,
-    filename: string,
-    orientation: "landscape" | "portrait" = "landscape",
-): Promise<void> {
+    orientation: "landscape" | "portrait",
+): Promise<InstanceType<typeof jsPDF>> {
     const clone = sourceElement.cloneNode(true) as HTMLElement;
     clone.style.position = "fixed";
     clone.style.top = "0";
@@ -56,8 +55,7 @@ export async function downloadCardsPdf(
         );
 
         if (pageNodes.length === 0) {
-            alert("Tidak ada kartu untuk diunduh.");
-            return;
+            throw new Error("Tidak ada kartu untuk diproses.");
         }
 
         const pdf = new jsPDF({
@@ -102,8 +100,44 @@ export async function downloadCardsPdf(
             pdf.addImage(imgData, "JPEG", x, y, renderWidth, renderHeight);
         }
 
-        pdf.save(filename);
+        return pdf;
     } finally {
         document.body.removeChild(clone);
+    }
+}
+
+export async function downloadCardsPdf(
+    sourceElement: HTMLElement,
+    filename: string,
+    orientation: "landscape" | "portrait" = "landscape",
+): Promise<void> {
+    const pdf = await buildCardsPdf(sourceElement, orientation);
+    pdf.save(filename);
+}
+
+export async function openCardsPdfForPrint(
+    sourceElement: HTMLElement,
+    orientation: "landscape" | "portrait" = "landscape",
+): Promise<void> {
+    const newTab = window.open("", "_blank");
+
+    if (!newTab) {
+        alert(
+            "Popup diblokir oleh browser. Mohon izinkan popup untuk situs ini agar PDF bisa dibuka di tab baru.",
+        );
+        return;
+    }
+
+    newTab.document.write(
+        "<title>Menyiapkan PDF...</title><body style='font-family:sans-serif;padding:24px;color:#555'>Menyiapkan PDF, mohon tunggu sebentar...</body>",
+    );
+
+    try {
+        const pdf = await buildCardsPdf(sourceElement, orientation);
+        const blobUrl = pdf.output("bloburl") as unknown as string;
+        newTab.location.href = blobUrl;
+    } catch (err) {
+        newTab.close();
+        throw err;
     }
 }
