@@ -57,7 +57,7 @@ const allMenuItems = [
     id: "scan",
     label: "Scan Presensi",
     icon: Scan,
-    roles: ["kepala_sekolah", "tu", "guru_wali_kelas"],
+    roles: ["kepala_sekolah", "tu", "guru_biasa", "guru_wali_kelas"],
   },
   {
     id: "rekap",
