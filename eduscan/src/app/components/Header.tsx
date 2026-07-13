@@ -111,15 +111,12 @@ export function Header({
       .limit(5);
 
     if (data) {
-      // load read ids from localStorage for this user (persist per-browser)
       const readKey = `eduscan_reads_${user?.id || "guest"}`;
       let readIds: string[] = [];
       try {
         const raw = localStorage.getItem(readKey);
         if (raw) readIds = JSON.parse(raw);
-      } catch (e) {
-        // ignore parse errors
-      }
+      } catch (e) {}
 
       setNotifications(
         (data as any[]).map((a) => {
