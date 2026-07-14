@@ -745,7 +745,7 @@ export function ScanSiswa() {
                 <CardTitle>Input Manual Kehadiran</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid gap-4 md:grid-cols-[1fr_280px]">
+                <div className="grid gap-4 md:grid-cols-[1fr_280px] md:items-end">
                   <div className="space-y-2">
                     <label className="block text-sm font-medium text-muted-foreground">
                       Filter Kelas
@@ -754,7 +754,7 @@ export function ScanSiswa() {
                       value={selectedKelas}
                       onValueChange={(value) => setSelectedKelas(value)}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className="bg-muted border border-input hover:bg-muted/80">
                         <SelectValue placeholder="Pilih kelas" />
                       </SelectTrigger>
                       <SelectContent>
@@ -769,11 +769,11 @@ export function ScanSiswa() {
                     </Select>
                   </div>
 
-                  <div className="relative flex items-center">
-                    <Search className="absolute left-3 inset-y-0 my-auto w-4 h-4 text-muted-foreground" />
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <Input
                       placeholder="Cari nama, NISN, atau kelas..."
-                      className="pl-10"
+                      className="pl-10 h-9"
                       value={manualSearch}
                       onChange={(e) => setManualSearch(e.target.value)}
                     />
