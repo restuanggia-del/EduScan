@@ -46,7 +46,7 @@ export default function App() {
       qr: ["kepala_sekolah", "tu"],
       pengaturan: ["kepala_sekolah"],
       siswa: ["kepala_sekolah", "tu", "guru_wali_kelas"],
-      scan: ["kepala_sekolah", "tu", "guru_wali_kelas"],
+      scan: ["kepala_sekolah", "tu", "guru_biasa", "guru_wali_kelas"],
       rekap: ["kepala_sekolah", "tu", "guru_wali_kelas"],
       "absen-saya": ["guru_biasa", "guru_wali_kelas"],
     };
