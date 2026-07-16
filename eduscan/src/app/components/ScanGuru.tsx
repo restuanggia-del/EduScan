@@ -1,5 +1,14 @@
-import { useState, useEffect } from "react";
-import { Search, CheckCircle, AlertTriangle, Zap } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { Html5Qrcode } from "html5-qrcode";
+import {
+  Search,
+  CheckCircle,
+  AlertTriangle,
+  Zap,
+  Camera,
+  CameraOff,
+  UserX,
+} from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
@@ -29,6 +38,7 @@ interface Target {
   key: string;
   nama: string;
   nip_email: string;
+  nip: string | null;
   peran: "guru" | "kepala_sekolah" | "tu";
   guru_id: string | null;
   user_id: string | null;
@@ -63,7 +73,7 @@ const statusColor: Record<string, string> = {
 };
 
 export function ScanGuru() {
-  const [showDarurat, setShowDarurat] = useState(false);
+  const [modeAktif, setModeAktif] = useState<"qr" | "manual" | "darurat">("qr");
   const [search, setSearch] = useState("");
   const [targets, setTargets] = useState<Target[]>([]);
   const [loading, setLoading] = useState(true);
@@ -83,9 +93,24 @@ export function ScanGuru() {
   const [manualStatus, setManualStatus] = useState<StatusGuru>("hadir");
   const [submitting, setSubmitting] = useState(false);
 
+  // Mode Scan QR Code — QR berisi `nip` (guru & users/kepsek-tu).
+  const [qrMode, setQrMode] = useState<"masuk" | "pulang">("masuk");
+  const [scanning, setScanning] = useState(false);
+  const [scanError, setScanError] = useState("");
+  const scannerRef = useRef<Html5Qrcode | null>(null);
+  const isProcessingRef = useRef(false);
+
   useEffect(() => {
     fetchTargets();
     fetchTodayRecords();
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (scannerRef.current) {
+        scannerRef.current.stop().catch(console.error);
+      }
+    };
   }, []);
 
   const fetchTargets = async () => {
@@ -98,13 +123,14 @@ export function ScanGuru() {
 
     const { data: ksData } = await supabase
       .from("users")
-      .select("id, nama, email, role")
+      .select("id, nama, email, role, nip")
       .in("role", ["kepala_sekolah", "tu"]);
 
     const guruTargets: Target[] = (guruData || []).map((g) => ({
       key: g.id,
       nama: g.nama,
       nip_email: g.nip || "-",
+      nip: g.nip || null,
       peran: "guru",
       guru_id: g.id,
       user_id: g.user_id,
@@ -113,7 +139,8 @@ export function ScanGuru() {
     const ksTargets: Target[] = (ksData || []).map((u) => ({
       key: u.id,
       nama: u.nama,
-      nip_email: u.email,
+      nip_email: u.nip || u.email,
+      nip: u.nip || null,
       peran: u.role === "kepala_sekolah" ? "kepala_sekolah" : "tu",
       guru_id: null,
       user_id: u.id,
@@ -281,34 +308,194 @@ export function ScanGuru() {
     saveAbsensi(pendingTarget, pendingMode, manualStatus);
   };
 
+  const handleGuruScanSuccess = async (decodedText: string) => {
+    if (isProcessingRef.current) return;
+    isProcessingRef.current = true;
+    setScanError("");
+
+    try {
+      const nip = decodedText.trim();
+      const target = targets.find((t) => t.nip && t.nip === nip);
+
+      if (!target) {
+        setScanError("NIP tidak ditemukan di database!");
+        return;
+      }
+
+      if (qrMode === "masuk") {
+        await handleAbsenMasukClick(target);
+      } else {
+        await handleAbsenPulangClick(target);
+      }
+    } catch (err) {
+      console.error("Error scan guru:", err);
+      setScanError("Format QR code tidak valid!");
+    } finally {
+      setTimeout(() => {
+        isProcessingRef.current = false;
+      }, 3000);
+    }
+  };
+
+  const startScanning = async () => {
+    try {
+      const html5QrCode = new Html5Qrcode("qr-reader-guru");
+      scannerRef.current = html5QrCode;
+      await html5QrCode.start(
+        { facingMode: "environment" },
+        { fps: 10, qrbox: { width: 250, height: 250 } },
+        handleGuruScanSuccess,
+        undefined,
+      );
+      setScanning(true);
+      setScanError("");
+    } catch {
+      setScanError(
+        "Tidak dapat mengakses kamera. Pastikan izin kamera sudah diberikan.",
+      );
+    }
+  };
+
+  const stopScanning = async () => {
+    if (scannerRef.current) {
+      try {
+        await scannerRef.current.stop();
+        scannerRef.current = null;
+        setScanning(false);
+      } catch (err) {
+        console.error(err);
+      }
+    }
+  };
+
   return (
     <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-foreground">
-            Scan Presensi Guru
-          </h2>
-          <p className="text-muted-foreground">
-            Presensi untuk Guru & Kepala Sekolah. Status Hadir/Terlambat
-            dihitung otomatis berdasarkan jadwal mengajar.
-          </p>
-        </div>
-        <Button
-          variant={showDarurat ? "default" : "outline"}
-          className={cn(
-            "cursor-pointer",
-            showDarurat && "bg-amber-500 hover:bg-amber-600 border-amber-500",
-          )}
-          onClick={() => setShowDarurat((v) => !v)}
-        >
-          <Zap className="w-4 h-4 mr-1" />
-          {showDarurat ? "Tutup Mode Darurat" : "Mode Darurat"}
-        </Button>
+      <div>
+        <h2 className="text-2xl font-bold text-foreground">
+          Scan Presensi Guru
+        </h2>
+        <p className="text-muted-foreground">
+          Presensi untuk Guru & Kepala Sekolah. Status Hadir/Terlambat dihitung
+          otomatis berdasarkan jadwal mengajar.
+        </p>
       </div>
 
-      {showDarurat ? (
+      <div className="flex gap-2">
+        <button
+          onClick={() => setModeAktif("qr")}
+          className={cn(
+            "flex-1 py-2.5 rounded-lg text-sm font-medium border transition-colors cursor-pointer",
+            modeAktif === "qr"
+              ? "bg-primary text-primary-foreground border-primary"
+              : "border-input hover:bg-muted",
+          )}
+        >
+          📷 Scan QR Code
+        </button>
+        <button
+          onClick={() => setModeAktif("manual")}
+          className={cn(
+            "flex-1 py-2.5 rounded-lg text-sm font-medium border transition-colors cursor-pointer",
+            modeAktif === "manual"
+              ? "bg-primary text-primary-foreground border-primary"
+              : "border-input hover:bg-muted",
+          )}
+        >
+          <UserX className="w-4 h-4 inline mr-1" />
+          Input Manual (Izin/Sakit/Alfa/TS)
+        </button>
+        <button
+          onClick={() => setModeAktif("darurat")}
+          className={cn(
+            "flex-1 py-2.5 rounded-lg text-sm font-medium border transition-colors cursor-pointer",
+            modeAktif === "darurat"
+              ? "bg-amber-500 text-white border-amber-500"
+              : "border-input hover:bg-muted",
+          )}
+        >
+          <Zap className="w-4 h-4 inline mr-1" />
+          Mode Darurat
+        </button>
+      </div>
+
+      {modeAktif === "qr" && (
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle>Scan QR Code (NIP)</CardTitle>
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  variant={qrMode === "masuk" ? "default" : "outline"}
+                  onClick={() => {
+                    setQrMode("masuk");
+                    setScanError("");
+                  }}
+                  className="cursor-pointer"
+                >
+                  Presensi Masuk
+                </Button>
+                <Button
+                  size="sm"
+                  variant={qrMode === "pulang" ? "default" : "outline"}
+                  onClick={() => {
+                    setQrMode("pulang");
+                    setScanError("");
+                  }}
+                  className="cursor-pointer"
+                >
+                  Presensi Pulang
+                </Button>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {!scanning && (
+              <div className="w-full h-[350px] rounded-lg bg-muted flex items-center justify-center">
+                <div className="text-center">
+                  <Camera className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-muted-foreground">Kamera belum aktif</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Mode:{" "}
+                    {qrMode === "masuk" ? "Presensi Masuk" : "Presensi Pulang"}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            <div
+              id="qr-reader-guru"
+              className="w-full rounded-lg overflow-hidden"
+            />
+
+            {!scanning ? (
+              <Button className="w-full cursor-pointer" onClick={startScanning}>
+                <Camera className="w-4 h-4" />
+                Mulai Scan
+              </Button>
+            ) : (
+              <Button
+                className="w-full cursor-pointer"
+                variant="destructive"
+                onClick={stopScanning}
+              >
+                <CameraOff className="w-4 h-4" />
+                Stop Scan
+              </Button>
+            )}
+
+            {scanError && (
+              <div className="bg-destructive/10 text-destructive p-4 rounded-lg text-sm font-medium">
+                ⚠️ {scanError}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {modeAktif === "darurat" ? (
         <DaruratGuru />
-      ) : (
+      ) : modeAktif === "manual" ? (
         <Card>
           <CardHeader>
             <CardTitle>Cari Guru / Kepala Sekolah</CardTitle>
@@ -336,58 +523,93 @@ export function ScanGuru() {
                   return (
                     <div
                       key={t.key}
-                      className="flex items-center justify-between border rounded-lg p-3"
+                      className="flex flex-col gap-2 border rounded-lg p-3"
                     >
-                      <div>
-                        <p className="font-medium text-sm">
-                          {t.nama}{" "}
-                          {t.peran === "kepala_sekolah" && (
-                            <Badge variant="secondary" className="ml-1">
-                              Kepala Sekolah
-                            </Badge>
-                          )}
-                          {t.peran === "tu" && (
-                            <Badge variant="secondary" className="ml-1">
-                              TU
-                            </Badge>
-                          )}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {t.nip_email}
-                        </p>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="font-medium text-sm">
+                            {t.nama}{" "}
+                            {t.peran === "kepala_sekolah" && (
+                              <Badge variant="secondary" className="ml-1">
+                                Kepala Sekolah
+                              </Badge>
+                            )}
+                            {t.peran === "tu" && (
+                              <Badge variant="secondary" className="ml-1">
+                                TU
+                              </Badge>
+                            )}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {t.nip_email}
+                          </p>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            variant={masukDone ? "outline" : "default"}
+                            disabled={masukDone}
+                            className="cursor-pointer"
+                            onClick={() => handleAbsenMasukClick(t)}
+                          >
+                            {masukDone ? (
+                              <>
+                                <CheckCircle className="w-4 h-4 mr-1" /> Masuk
+                              </>
+                            ) : (
+                              "Presensi Masuk"
+                            )}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant={pulangDone ? "outline" : "secondary"}
+                            disabled={pulangDone || !masukDone}
+                            className="cursor-pointer"
+                            onClick={() => handleAbsenPulangClick(t)}
+                          >
+                            {pulangDone ? (
+                              <>
+                                <CheckCircle className="w-4 h-4 mr-1" /> Pulang
+                              </>
+                            ) : (
+                              "Presensi Pulang"
+                            )}
+                          </Button>
+                        </div>
                       </div>
-                      <div className="flex gap-2">
-                        <Button
-                          size="sm"
-                          variant={masukDone ? "outline" : "default"}
-                          disabled={masukDone}
-                          className="cursor-pointer"
-                          onClick={() => handleAbsenMasukClick(t)}
-                        >
-                          {masukDone ? (
-                            <>
-                              <CheckCircle className="w-4 h-4 mr-1" /> Masuk
-                            </>
-                          ) : (
-                            "Presensi Masuk"
-                          )}
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant={pulangDone ? "outline" : "secondary"}
-                          disabled={pulangDone || !masukDone}
-                          className="cursor-pointer"
-                          onClick={() => handleAbsenPulangClick(t)}
-                        >
-                          {pulangDone ? (
-                            <>
-                              <CheckCircle className="w-4 h-4 mr-1" /> Pulang
-                            </>
-                          ) : (
-                            "Presensi Pulang"
-                          )}
-                        </Button>
-                      </div>
+
+                      {!masukDone && (
+                        <div className="flex gap-2 pt-2 border-t">
+                          <button
+                            onClick={() => saveAbsensi(t, "masuk", "izin")}
+                            disabled={submitting}
+                            className="px-2.5 py-1 rounded-md bg-blue-100 text-blue-700 text-xs font-medium hover:bg-blue-200 transition-colors cursor-pointer"
+                          >
+                            Izin
+                          </button>
+                          <button
+                            onClick={() => saveAbsensi(t, "masuk", "sakit")}
+                            disabled={submitting}
+                            className="px-2.5 py-1 rounded-md bg-green-100 text-green-700 text-xs font-medium hover:bg-green-200 transition-colors cursor-pointer"
+                          >
+                            Sakit
+                          </button>
+                          <button
+                            onClick={() => saveAbsensi(t, "masuk", "alfa")}
+                            disabled={submitting}
+                            className="px-2.5 py-1 rounded-md bg-destructive/10 text-destructive text-xs font-medium hover:bg-destructive/20 transition-colors cursor-pointer"
+                          >
+                            Alfa
+                          </button>
+                          <button
+                            onClick={() => saveAbsensi(t, "masuk", "ts")}
+                            disabled={submitting}
+                            className="px-2.5 py-1 rounded-md bg-purple-100 text-purple-700 text-xs font-medium hover:bg-purple-200 transition-colors cursor-pointer"
+                          >
+                            TS
+                          </button>
+                        </div>
+                      )}
                     </div>
                   );
                 })}
@@ -400,7 +622,7 @@ export function ScanGuru() {
             )}
           </CardContent>
         </Card>
-      )}
+      ) : null}
 
       <Card>
         <CardHeader>
