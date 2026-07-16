@@ -23,17 +23,17 @@ EduScan memudahkan pengelolaan absensi siswa menggunakan QR Code — guru cukup 
 ---
 
 ## 👥 Role & Akses
-
-| Fitur | Kepala Sekolah | Tata Usaha | Guru Wali Kelas |
-|---|---|---|---|
-| Dashboard | ✅ | ✅ | ✅ |
-| Manajemen Kelas | ✅ | ✅ | ❌ |
-| Data Siswa | ✅ | ✅ | 👁️ Lihat saja |
-| Data Guru | ✅ | ✅ | ❌ |
-| Generate QR | ✅ | ✅ | ❌ |
-| Scan Absensi | ✅ | ✅ | ✅ |
-| Rekap Absensi | ✅ | ✅ | ✅ |
-| Pengaturan | ✅ | ❌ | ❌ |
+| Fitur | Kepala Sekolah | Tata Usaha | Guru Wali Kelas | Guru Biasa |
+|---|---|---|---|---|
+| Dashboard | ✅ | ✅ | ✅ | ✅ |
+| Manajemen Kelas | ✅ | ✅ | ❌ | ❌ |
+| Data Siswa | ✅ | ✅ | 👁️ Lihat saja (kelasnya sendiri) | ❌ |
+| Data Guru | ✅ | ✅ | ❌ | ❌ |
+| Generate QR | ✅ | ✅ | ❌ | ❌ |
+| Scan Absensi | ✅ | ✅ | ✅ | ✅ |
+| Rekap Absensi | ✅ | ✅ | ✅ | ❌ |
+| Absen Saya | ❌ | ❌ | ✅ | ✅ |
+| Pengaturan | ✅ | ❌ | ❌ | ❌ |
 
 ---
 
