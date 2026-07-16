@@ -194,6 +194,42 @@ export function ScanSiswa() {
     return h * 60 + m;
   };
 
+  const HARI_MAP = [
+    "minggu",
+    "senin",
+    "selasa",
+    "rabu",
+    "kamis",
+    "jumat",
+    "sabtu",
+  ];
+  const getHariIni = () => HARI_MAP[new Date().getDay()];
+
+  const DEFAULT_JADWAL = {
+    jam_masuk: "07:30",
+    jam_pulang: "14:30",
+    batas_terlambat_menit: 0,
+  };
+
+  const fetchJadwalHariIni = async () => {
+    const hari = getHariIni();
+    const { data, error } = await supabase
+      .from("jadwal_sekolah")
+      .select("jam_masuk, jam_pulang, batas_terlambat_menit")
+      .eq("hari", hari)
+      .maybeSingle();
+
+    if (error || !data) {
+      return DEFAULT_JADWAL;
+    }
+
+    return {
+      jam_masuk: String(data.jam_masuk).slice(0, 5),
+      jam_pulang: String(data.jam_pulang).slice(0, 5),
+      batas_terlambat_menit: data.batas_terlambat_menit ?? 0,
+    };
+  };
+
   const sendWhatsAppNotification = async (
     noWA: string,
     nama: string,
@@ -345,8 +381,10 @@ export function ScanSiswa() {
         .eq("id", 1)
         .single();
 
-      const jamBatasMasuk = settingsData?.jam_batas_masuk || "07:30";
-      const jamBatasPulang = settingsData?.jam_batas_pulang || "13:00";
+      const jadwalHariIni = await fetchJadwalHariIni();
+      const jamMasukJadwal = jadwalHariIni.jam_masuk;
+      const jamBatasPulang = jadwalHariIni.jam_pulang;
+      const batasTerlambatMenit = jadwalHariIni.batas_terlambat_menit;
       const whatsappEnabled = settingsData?.whatsapp_enabled || false;
       const whatsappToken = settingsData?.whatsapp_token || "";
       const namaSekolah = settingsData?.nama_sekolah || "Sekolah";
@@ -409,15 +447,18 @@ export function ScanSiswa() {
           return;
         }
 
-        const menitBatasMasuk = toMenit(jamBatasMasuk);
-        if (menitSekarang > menitBatasMasuk + 120) {
+        const menitJamMasuk = toMenit(jamMasukJadwal);
+        const menitBatasTerlambat = menitJamMasuk + batasTerlambatMenit;
+
+        if (menitSekarang > menitJamMasuk + 120) {
           setErrorMessage(
-            `Tidak bisa presensi masuk! Sudah melewati batas waktu toleransi (${jamBatasMasuk} WIB + 2 jam).`,
+            `Tidak bisa presensi masuk! Sudah melewati batas waktu toleransi (${jamMasukJadwal} WIB + 2 jam).`,
           );
           return;
         }
 
-        const status = menitSekarang > menitBatasMasuk ? "terlambat" : "hadir";
+        const status =
+          menitSekarang > menitBatasTerlambat ? "terlambat" : "hadir";
 
         const { error } = await supabase.from("absensi_siswa").insert({
           siswa_id: siswa.id,
