@@ -27,7 +27,7 @@ const allMenuItems = [
     id: "absen-saya",
     label: "Presensi Saya",
     icon: Clock,
-    roles: ["guru_biasa", "guru_wali_kelas"],
+    roles: [],
   },
   {
     id: "kelas",
@@ -69,7 +69,7 @@ const allMenuItems = [
     id: "pengaturan",
     label: "Pengaturan",
     icon: Settings,
-    roles: ["kepala_sekolah"],
+    roles: ["kepala_sekolah", "tu"],
   },
 ];
 

@@ -44,7 +44,7 @@ export default function App() {
       kelas: ["kepala_sekolah", "tu"],
       guru: ["kepala_sekolah", "tu"],
       qr: ["kepala_sekolah", "tu"],
-      pengaturan: ["kepala_sekolah"],
+      pengaturan: ["kepala_sekolah", "tu"],
       siswa: ["kepala_sekolah", "tu", "guru_wali_kelas"],
       scan: ["kepala_sekolah", "tu", "guru_biasa", "guru_wali_kelas"],
       rekap: ["kepala_sekolah", "tu", "guru_wali_kelas"],
