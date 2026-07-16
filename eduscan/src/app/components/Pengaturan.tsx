@@ -18,8 +18,6 @@ import { toast } from "sonner";
 export function Pengaturan() {
   const [settings, setSettings] = useState({
     namaSekolah: "SMK MMT Penawar Aji",
-    jamBatasMasuk: "07:30",
-    jamBatasPulang: "15:00",
     whatsappEnabled: true,
     whatsappToken: "",
     notifMasuk: true,
@@ -44,9 +42,69 @@ export function Pengaturan() {
   const [isSaving, setIsSaving] = useState(false);
   const [loading, setLoading] = useState(true);
 
+  const HARI_LIST: { key: string; label: string }[] = [
+    { key: "senin", label: "Senin" },
+    { key: "selasa", label: "Selasa" },
+    { key: "rabu", label: "Rabu" },
+    { key: "kamis", label: "Kamis" },
+    { key: "jumat", label: "Jumat" },
+  ];
+  const [jadwalSekolah, setJadwalSekolah] = useState<
+    Record<
+      string,
+      { jam_masuk: string; jam_pulang: string; batas_terlambat_menit: number }
+    >
+  >({});
+  const [isSavingJadwal, setIsSavingJadwal] = useState(false);
+
   useEffect(() => {
     fetchSettings();
+    fetchJadwalSekolah();
   }, []);
+
+  const fetchJadwalSekolah = async () => {
+    const { data, error } = await supabase
+      .from("jadwal_sekolah")
+      .select("hari, jam_masuk, jam_pulang, batas_terlambat_menit");
+
+    if (error) {
+      console.error("Error fetching jadwal_sekolah:", error.message);
+      return;
+    }
+
+    const mapped: typeof jadwalSekolah = {};
+    (data || []).forEach((row: any) => {
+      mapped[row.hari] = {
+        jam_masuk: String(row.jam_masuk).slice(0, 5),
+        jam_pulang: String(row.jam_pulang).slice(0, 5),
+        batas_terlambat_menit: row.batas_terlambat_menit ?? 0,
+      };
+    });
+    setJadwalSekolah(mapped);
+  };
+
+  const handleSaveJadwalSekolah = async () => {
+    setIsSavingJadwal(true);
+
+    const rows = HARI_LIST.map(({ key }) => ({
+      hari: key,
+      jam_masuk: jadwalSekolah[key]?.jam_masuk || "07:30",
+      jam_pulang:
+        jadwalSekolah[key]?.jam_pulang || (key === "jumat" ? "11:20" : "14:30"),
+      batas_terlambat_menit: jadwalSekolah[key]?.batas_terlambat_menit ?? 0,
+    }));
+
+    const { error } = await supabase
+      .from("jadwal_sekolah")
+      .upsert(rows, { onConflict: "hari" });
+
+    if (error) {
+      toast.error("Gagal menyimpan jadwal sekolah: " + error.message);
+    } else {
+      toast.success("Jadwal sekolah berhasil disimpan!");
+    }
+    setIsSavingJadwal(false);
+  };
 
   const fetchSettings = async () => {
     setLoading(true);
@@ -61,8 +119,6 @@ export function Pengaturan() {
     } else if (data) {
       setSettings({
         namaSekolah: data.nama_sekolah,
-        jamBatasMasuk: data.jam_batas_masuk,
-        jamBatasPulang: data.jam_batas_pulang,
         whatsappEnabled: data.whatsapp_enabled,
         whatsappToken: data.whatsapp_token || "",
         notifMasuk: data.notif_masuk,
@@ -86,8 +142,6 @@ export function Pengaturan() {
       .from("settings")
       .update({
         nama_sekolah: settings.namaSekolah,
-        jam_batas_masuk: settings.jamBatasMasuk,
-        jam_batas_pulang: settings.jamBatasPulang,
         whatsapp_enabled: settings.whatsappEnabled,
         whatsapp_token: settings.whatsappToken,
         notif_masuk: settings.notifMasuk,
@@ -208,45 +262,83 @@ export function Pengaturan() {
             <CardHeader>
               <CardTitle>Jam Operasional</CardTitle>
               <CardDescription>
-                Atur waktu batas presensi masuk dan pulang
+                Atur jam masuk dan jam pulang sekolah untuk tiap hari (Senin s/d
+                Jumat). Jumat biasanya pulang lebih awal.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="jamBatasMasuk">Jam Batas Masuk</Label>
-                  <Input
-                    id="jamBatasMasuk"
-                    type="time"
-                    value={settings.jamBatasMasuk}
-                    onChange={(e) =>
-                      setSettings({
-                        ...settings,
-                        jamBatasMasuk: e.target.value,
-                      })
-                    }
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Siswa yang datang setelah jam ini akan dianggap terlambat
-                  </p>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="jamBatasPulang">Jam Batas Pulang</Label>
-                  <Input
-                    id="jamBatasPulang"
-                    type="time"
-                    value={settings.jamBatasPulang}
-                    onChange={(e) =>
-                      setSettings({
-                        ...settings,
-                        jamBatasPulang: e.target.value,
-                      })
-                    }
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Jam pulang normal siswa
-                  </p>
-                </div>
+              <div className="space-y-3">
+                {HARI_LIST.map(({ key, label }) => {
+                  const row = jadwalSekolah[key] || {
+                    jam_masuk: "07:30",
+                    jam_pulang: key === "jumat" ? "11:20" : "14:30",
+                    batas_terlambat_menit: 0,
+                  };
+                  return (
+                    <div
+                      key={key}
+                      className="grid grid-cols-1 md:grid-cols-[100px_1fr_1fr_1fr] gap-3 items-end p-3 border rounded-lg"
+                    >
+                      <p className="font-medium text-sm">{label}</p>
+                      <div className="space-y-1">
+                        <Label className="text-xs">Jam Masuk</Label>
+                        <Input
+                          type="time"
+                          value={row.jam_masuk}
+                          onChange={(e) =>
+                            setJadwalSekolah({
+                              ...jadwalSekolah,
+                              [key]: { ...row, jam_masuk: e.target.value },
+                            })
+                          }
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">Jam Pulang</Label>
+                        <Input
+                          type="time"
+                          value={row.jam_pulang}
+                          onChange={(e) =>
+                            setJadwalSekolah({
+                              ...jadwalSekolah,
+                              [key]: { ...row, jam_pulang: e.target.value },
+                            })
+                          }
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">
+                          Toleransi Terlambat (menit)
+                        </Label>
+                        <Input
+                          type="number"
+                          min={0}
+                          value={row.batas_terlambat_menit}
+                          onChange={(e) =>
+                            setJadwalSekolah({
+                              ...jadwalSekolah,
+                              [key]: {
+                                ...row,
+                                batas_terlambat_menit:
+                                  Number(e.target.value) || 0,
+                              },
+                            })
+                          }
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="flex justify-end">
+                <Button
+                  onClick={handleSaveJadwalSekolah}
+                  disabled={isSavingJadwal}
+                  className="cursor-pointer"
+                >
+                  <Save className="w-4 h-4" />
+                  {isSavingJadwal ? "Menyimpan..." : "Simpan Jadwal Sekolah"}
+                </Button>
               </div>
             </CardContent>
           </Card>
