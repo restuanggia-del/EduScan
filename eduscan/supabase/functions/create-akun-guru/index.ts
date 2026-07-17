@@ -172,7 +172,7 @@ Deno.serve(async (req) => {
         if (role_guru === "wali_kelas") {
             const { error: kelasError } = await supabaseAdmin
                 .from("kelas")
-                .update({ wali_kelas_guru_id: guruData.id })
+                .update({ wali_kelas: nama, wali_kelas_guru_id: guruData.id })
                 .eq("id", kelas_id);
             if (kelasError) {
                 throw new Error("STEP update_kelas: " + JSON.stringify(kelasError));

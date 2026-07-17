@@ -61,7 +61,7 @@ Deno.serve(async (req) => {
 
         const { error: clearKelasError } = await supabaseAdmin
             .from("kelas")
-            .update({ wali_kelas_guru_id: null })
+            .update({ wali_kelas: "-", wali_kelas_guru_id: null })
             .eq("wali_kelas_guru_id", guru_id);
 
         if (clearKelasError) {

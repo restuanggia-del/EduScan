@@ -230,10 +230,36 @@ export function DataGuru() {
             nip: formData.nip || null,
             mata_pelajaran: formData.mata_pelajaran || null,
             no_wa: formData.no_wa || null,
+            kelas_id:
+              formData.role_guru === "wali_kelas" ? formData.kelas_id : null,
           })
           .eq("id", editingGuru.id);
 
         if (updateError) throw updateError;
+
+        const oldKelasId = editingGuru.kelas_id;
+        const newKelasId =
+          formData.role_guru === "wali_kelas" ? formData.kelas_id : null;
+
+        if (oldKelasId && oldKelasId !== newKelasId) {
+          const { error: clearError } = await supabase
+            .from("kelas")
+            .update({ wali_kelas: "-", wali_kelas_guru_id: null })
+            .eq("id", oldKelasId)
+            .eq("wali_kelas_guru_id", editingGuru.id);
+          if (clearError) throw clearError;
+        }
+
+        if (newKelasId) {
+          const { error: setKelasError } = await supabase
+            .from("kelas")
+            .update({
+              wali_kelas: formData.nama,
+              wali_kelas_guru_id: editingGuru.id,
+            })
+            .eq("id", newKelasId);
+          if (setKelasError) throw setKelasError;
+        }
 
         await supabase
           .from("jadwal_guru")
