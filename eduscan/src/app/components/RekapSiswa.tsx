@@ -7,7 +7,6 @@ import { Label } from "./ui/label";
 import { supabase } from "../../lib/supabaseClient";
 import { useAuth } from "../../lib/AuthContext";
 import { cn } from "./ui/utils";
-import { printElement } from "../../lib/printWindow";
 import { downloadRekapPdf } from "../../lib/exportTablePdf";
 import { downloadRekapExcel } from "../../lib/exportExcel";
 

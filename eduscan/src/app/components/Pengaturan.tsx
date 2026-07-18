@@ -24,18 +24,12 @@ export function Pengaturan() {
     notifPulang: true,
     notifTerlambat: true,
 
-    templateMasuk:
-      "Ananda [nama] telah hadir di sekolah pada pukul [jam] WIB.\n\nSMK MMT Penawar Aji",
-    templateTerlambat:
-      "Ananda [nama] terlambat masuk sekolah pada pukul [jam] WIB\n\nSMK MMT Penawar Aji",
-    templatePulang:
-      "Ananda [nama] telah meninggalkan sekolah pada pukul [jam] WIB.\n\nSMK MMT Penawar Aji",
-    templateIzin:
-      "Ananda [nama] tidak hadir hari ini dengan keterangan Izin.\n\nSMK MMT Penawar Aji",
-    templateSakit:
-      "Ananda [nama] tidak hadir hari ini dengan keterangan Sakit.\n\nSMK MMT Penawar Aji",
-    templateAlfa:
-      "Ananda [nama] tidak hadir hari ini tanpa keterangan (Alfa).\n\nSMK MMT Penawar Aji",
+    templateMasuk: "",
+    templateTerlambat: "",
+    templatePulang: "",
+    templateIzin: "",
+    templateSakit: "",
+    templateAlfa: "",
   });
 
   const [testNumber, setTestNumber] = useState("");

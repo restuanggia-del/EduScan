@@ -47,6 +47,15 @@ interface Siswa {
   no_wa?: string;
 }
 
+const buildTemplates = (settingsData: any) => ({
+  templateMasuk: settingsData?.template_masuk || "",
+  templateTerlambat: settingsData?.template_terlambat || "",
+  templatePulang: settingsData?.template_pulang || "",
+  templateIzin: settingsData?.template_izin || "",
+  templateSakit: settingsData?.template_sakit || "",
+  templateAlfa: settingsData?.template_alfa || "",
+});
+
 export function ScanSiswa() {
   const [mode, setMode] = useState<"masuk" | "pulang">("masuk");
   const [scanning, setScanning] = useState(false);
@@ -332,20 +341,7 @@ export function ScanSiswa() {
         .single();
 
       if (settingsData?.whatsapp_enabled && siswa.no_wa) {
-        const templates = {
-          templateMasuk: settingsData?.template_masuk || "",
-          templateTerlambat: settingsData?.template_terlambat || "",
-          templatePulang: settingsData?.template_pulang || "",
-          templateIzin:
-            settingsData?.template_izin ||
-            "Ananda [nama] tidak hadir hari ini dengan keterangan Izin.",
-          templateSakit:
-            settingsData?.template_sakit ||
-            "Ananda [nama] tidak hadir hari ini dengan keterangan Sakit.",
-          templateAlfa:
-            settingsData?.template_alfa ||
-            "Ananda [nama] tidak hadir hari ini tanpa keterangan (Alfa).",
-        };
+        const templates = buildTemplates(settingsData);
 
         await sendWhatsAppNotification(
           siswa.no_wa,
@@ -394,26 +390,7 @@ export function ScanSiswa() {
         notifTerlambat: settingsData?.notif_terlambat ?? true,
       };
 
-      const templates = {
-        templateMasuk:
-          settingsData?.template_masuk ||
-          "Ananda [nama] telah hadir di sekolah pada pukul [jam] WIB.",
-        templateTerlambat:
-          settingsData?.template_terlambat ||
-          "Ananda [nama] terlambat masuk sekolah. Jam Masuk: [jam] WIB.",
-        templatePulang:
-          settingsData?.template_pulang ||
-          "Ananda [nama] telah meninggalkan sekolah pada pukul [jam] WIB.",
-        templateIzin:
-          settingsData?.template_izin ||
-          "Ananda [nama] tidak hadir hari ini dengan keterangan Izin.",
-        templateSakit:
-          settingsData?.template_sakit ||
-          "Ananda [nama] tidak hadir hari ini dengan keterangan Sakit.",
-        templateAlfa:
-          settingsData?.template_alfa ||
-          "Ananda [nama] tidak hadir hari ini tanpa keterangan (Alfa).",
-      };
+      const templates = buildTemplates(settingsData);
 
       const { data: siswa, error: siswaError } = await supabase
         .from("siswa")
