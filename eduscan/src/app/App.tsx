@@ -30,10 +30,15 @@ export default function App() {
   }
 
   if (!user) {
-    return authMode === "login" ? (
-      <Login onRegisterClick={() => setAuthMode("register")} />
-    ) : (
-      <Register onBack={() => setAuthMode("login")} />
+    return (
+      <>
+        {authMode === "login" ? (
+          <Login onRegisterClick={() => setAuthMode("register")} />
+        ) : (
+          <Register onBack={() => setAuthMode("login")} />
+        )}
+        <Toaster richColors position="top-center" />
+      </>
     );
   }
 

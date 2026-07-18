@@ -32,7 +32,16 @@ export function Login({ onRegisterClick }: { onRegisterClick?: () => void }) {
     });
 
     if (error) {
-      toast.error("Login gagal: " + error.message);
+      const msg = error.message.toLowerCase();
+      if (msg.includes("invalid login credentials")) {
+        toast.error("Email atau password salah. Silakan periksa kembali.");
+      } else if (msg.includes("email not confirmed")) {
+        toast.error(
+          "Email belum dikonfirmasi. Cek inbox email kamu untuk link konfirmasi.",
+        );
+      } else {
+        toast.error("Login gagal: " + error.message);
+      }
     } else {
       toast.success("Login berhasil!");
     }
