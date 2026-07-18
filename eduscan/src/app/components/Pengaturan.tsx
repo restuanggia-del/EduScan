@@ -138,7 +138,7 @@ export function Pengaturan() {
 
   const handleSave = async () => {
     setIsSaving(true);
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from("settings")
       .update({
         nama_sekolah: settings.namaSekolah,
@@ -156,12 +156,36 @@ export function Pengaturan() {
         template_sakit: settings.templateSakit,
         template_alfa: settings.templateAlfa,
       })
-      .eq("id", 1);
+      .eq("id", 1)
+      .select();
 
     if (error) {
       toast.error("Gagal menyimpan pengaturan: " + error.message);
+      console.error("Update settings error:", error);
+    } else if (!data || data.length === 0) {
+      toast.error(
+        "Pengaturan TIDAK tersimpan ke database. Kemungkinan besar RLS policy pada tabel 'settings' tidak mengizinkan role akun ini melakukan UPDATE.",
+      );
+      console.warn(
+        "Update settings: 0 rows affected. Cek RLS policy pada tabel public.settings untuk role akun yang sedang login.",
+      );
     } else {
       toast.success("Pengaturan berhasil disimpan!");
+      const saved = data[0];
+      setSettings({
+        namaSekolah: saved.nama_sekolah,
+        whatsappEnabled: saved.whatsapp_enabled,
+        whatsappToken: saved.whatsapp_token || "",
+        notifMasuk: saved.notif_masuk,
+        notifPulang: saved.notif_pulang,
+        notifTerlambat: saved.notif_terlambat,
+        templateMasuk: saved.template_masuk || "",
+        templateTerlambat: saved.template_terlambat || "",
+        templatePulang: saved.template_pulang || "",
+        templateIzin: saved.template_izin || "",
+        templateSakit: saved.template_sakit || "",
+        templateAlfa: saved.template_alfa || "",
+      });
     }
     setIsSaving(false);
   };
