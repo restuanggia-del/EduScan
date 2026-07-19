@@ -38,11 +38,11 @@ EduScan memudahkan pengelolaan absensi siswa menggunakan QR Code — guru cukup 
 
 ## 📱 Cara Penggunaan
 
-1. **Register** akun Super Admin pertama
+1. **Register** akun Tata Usaha (TU) / Kepala Sekolah (KS) pertama
 2. **Tambah Kelas** di menu Manajemen Kelas
 3. **Tambah Siswa** di menu Data Siswa
 4. **Tambah Guru** di menu Data Guru
-5. **Generate QR** kartu siswa di menu Generate QR
+5. **Generate QR** kartu siswa dan kartu guru di menu Generate QR
 6. **Scan** kartu QR saat absensi di menu Scan Absensi
 7. **Lihat rekap** kehadiran di menu Rekap Absensi
 8. **Atur notifikasi** WhatsApp di menu Pengaturan
