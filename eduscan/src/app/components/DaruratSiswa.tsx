@@ -22,7 +22,7 @@ interface BelumAbsenSiswa {
 type StatusManual = "izin" | "sakit" | "alfa";
 
 interface ReviewRow extends BelumAbsenSiswa {
-  checked: boolean; // true = akan ditandai Hadir
+  checked: boolean;
   manualStatus: StatusManual;
   keterangan: string;
 }

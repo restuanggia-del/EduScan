@@ -6,7 +6,6 @@ import { Button } from "./ui/button";
 import { Label } from "./ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import { supabase } from "../../lib/supabaseClient";
-import { printElement } from "../../lib/printWindow";
 import { downloadCardsPdf, openCardsPdfForPrint } from "../../lib/exportPdf";
 
 interface Student {
