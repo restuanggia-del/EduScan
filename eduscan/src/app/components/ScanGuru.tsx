@@ -100,6 +100,7 @@ export function ScanGuru() {
   const [scanError, setScanError] = useState("");
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const isProcessingRef = useRef(false);
+  const barcodeInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     fetchTargets();
@@ -113,6 +114,12 @@ export function ScanGuru() {
       }
     };
   }, []);
+
+  useEffect(() => {
+    if (modeAktif === "qr") {
+      barcodeInputRef.current?.focus();
+    }
+  }, [modeAktif, qrMode, scanError]);
 
   const fetchTargets = async () => {
     setLoading(true);
@@ -470,6 +477,37 @@ export function ScanGuru() {
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
+                <div>
+                  <label className="text-sm font-medium mb-1.5 flex items-center gap-1.5">
+                    🔌 Scan pakai Alat Barcode/QR Scanner (USB)
+                  </label>
+                  <input
+                    ref={barcodeInputRef}
+                    type="text"
+                    autoFocus
+                    autoComplete="off"
+                    placeholder="Klik di sini lalu tembak barcode/QR (NIP)..."
+                    className="w-full border border-input rounded-lg px-3 py-2.5 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary"
+                    onBlur={() => {
+                      if (modeAktif === "qr") {
+                        setTimeout(() => barcodeInputRef.current?.focus(), 150);
+                      }
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        const value = e.currentTarget.value.trim();
+                        e.currentTarget.value = "";
+                        if (value) handleGuruScanSuccess(value);
+                      }
+                    }}
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Pastikan kursor selalu ada di kolom ini sebelum menembakkan
+                    scanner. Kolom ini otomatis fokus kembali secara berkala.
+                  </p>
+                </div>
+
                 {!scanning && (
                   <div className="w-full h-[350px] rounded-lg bg-muted flex items-center justify-center">
                     <div className="text-center">
