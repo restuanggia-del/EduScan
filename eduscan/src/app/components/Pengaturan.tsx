@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Save, MessageSquare, Bell, Clock, School, Send } from "lucide-react";
+import { Save, MessageSquare, Clock, School, Send } from "lucide-react";
 import {
   Card,
   CardContent,
