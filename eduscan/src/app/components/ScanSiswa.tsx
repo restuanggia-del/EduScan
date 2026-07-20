@@ -432,17 +432,16 @@ export function ScanSiswa() {
         }
 
         const menitJamMasuk = toMenit(jamMasukJadwal);
-        const menitBatasTerlambat = menitJamMasuk + batasTerlambatMenit;
+        const menitBatasScanMasuk = menitJamMasuk + batasTerlambatMenit;
 
-        if (menitSekarang > menitJamMasuk + 120) {
+        if (menitSekarang > menitBatasScanMasuk) {
           setErrorMessage(
-            `Tidak bisa presensi masuk! Sudah melewati batas waktu toleransi (${jamMasukJadwal} WIB + 2 jam).`,
+            `Tidak bisa presensi masuk! Sudah melewati batas waktu keterlambatan (${jamMasukJadwal} WIB + ${batasTerlambatMenit} menit).`,
           );
           return;
         }
 
-        const status =
-          menitSekarang > menitBatasTerlambat ? "terlambat" : "hadir";
+        const status = menitSekarang > menitJamMasuk ? "terlambat" : "hadir";
 
         const { error } = await supabase.from("absensi_siswa").insert({
           siswa_id: siswa.id,
