@@ -144,7 +144,7 @@ function StaffCard({ staff }: StaffCardProps) {
             <p className="font-bold text-foreground">{staff.nama}</p>
           </div>
           <div>
-            <span className="text-muted-foreground">NIP:</span>
+            <span className="text-muted-foreground">NUPTK:</span>
             <p className="font-bold text-foreground">{staff.nip || "-"}</p>
           </div>
           <div>
