@@ -215,7 +215,7 @@ export function DataGuru() {
       return;
     }
     if (formData.role_guru === "wali_kelas" && !formData.nip.trim()) {
-      setErrorMsg("NIP wajib diisi (dipakai sebagai password default akun).");
+      setErrorMsg("NUPTK wajib diisi (dipakai sebagai password default akun).");
       return;
     }
 
@@ -393,7 +393,7 @@ export function DataGuru() {
                 <thead>
                   <tr className="border-b text-left text-muted-foreground">
                     <th className="py-2 pr-4">Nama</th>
-                    <th className="py-2 pr-4">NIP</th>
+                    <th className="py-2 pr-4">NUPTK</th>
                     <th className="py-2 pr-4">Mata Pelajaran</th>
                     <th className="py-2 pr-4">Role</th>
                     <th className="py-2 pr-4">Kelas Diampu</th>
@@ -490,17 +490,17 @@ export function DataGuru() {
             </div>
 
             <div className="space-y-2">
-              <Label>NIP</Label>
+              <Label>NUPTK</Label>
               <Input
                 value={formData.nip}
                 onChange={(e) =>
                   setFormData({ ...formData, nip: e.target.value })
                 }
-                placeholder="Masukkan NIP"
+                placeholder="Masukkan NUPTK"
               />
               {formData.role_guru === "wali_kelas" && (
                 <p className="text-xs text-muted-foreground">
-                  NIP dipakai sebagai password default akun guru ini.
+                  NUPTK dipakai sebagai password default akun guru ini.
                 </p>
               )}
             </div>
