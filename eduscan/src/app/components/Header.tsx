@@ -611,14 +611,14 @@ export function Header({
 
             {(effectiveRole === "kepala_sekolah" || effectiveRole === "tu") && (
               <div className="space-y-2">
-                <Label htmlFor="nip">NIP</Label>
+                <Label htmlFor="nip">NUPTK</Label>
                 <Input
                   id="nip"
                   value={profilForm.nip}
                   onChange={(e) =>
                     setProfilForm({ ...profilForm, nip: e.target.value })
                   }
-                  placeholder="Nomor Induk Pegawai"
+                  placeholder="Nomor Unik Pendidik dan Tenaga Kependidikan"
                 />
               </div>
             )}
