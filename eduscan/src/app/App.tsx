@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Sidebar } from "./components/Sidebar";
 import { Header } from "./components/Header";
 import { Dashboard } from "./components/Dashboard";
@@ -17,9 +17,31 @@ import { Register } from "./components/Register";
 
 export default function App() {
   const { user, loading } = useAuth();
-  const [currentPage, setCurrentPage] = useState("dashboard");
+  const [currentPage, setCurrentPageState] = useState(() => {
+    if (typeof window === "undefined") return "dashboard";
+    return (
+      new URLSearchParams(window.location.search).get("page") || "dashboard"
+    );
+  });
   const [searchQuery, setSearchQuery] = useState("");
   const [authMode, setAuthMode] = useState<"login" | "register">("login");
+
+  const setCurrentPage = useCallback((page: string) => {
+    setCurrentPageState(page);
+    const url = new URL(window.location.href);
+    url.searchParams.set("page", page);
+    window.history.pushState({ page }, "", url);
+  }, []);
+
+  useEffect(() => {
+    const onPopState = () => {
+      const page =
+        new URLSearchParams(window.location.search).get("page") || "dashboard";
+      setCurrentPageState(page);
+    };
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, []);
 
   if (loading) {
     return (
