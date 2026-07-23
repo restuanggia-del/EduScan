@@ -148,12 +148,12 @@ export function Register({ onBack }: { onBack: () => void }) {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="reg-nip">NIP (opsional)</Label>
+                  <Label htmlFor="reg-nip">NUPTK (opsional)</Label>
                   <Input
                     id="reg-nip"
                     value={form.nip}
                     onChange={(e) => setForm({ ...form, nip: e.target.value })}
-                    placeholder="Nomor Induk Pegawai"
+                    placeholder="Nomor Unik Pendidik dan Tenaga Kependidikan"
                   />
                 </div>
 
