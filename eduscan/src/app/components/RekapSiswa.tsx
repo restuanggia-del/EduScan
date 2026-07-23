@@ -291,28 +291,20 @@ export function RekapSiswa() {
   };
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between no-print">
-        <div>
-          <h2 className="text-2xl font-bold text-foreground">Rekap Presensi</h2>
-          <p className="text-muted-foreground">
-            Laporan kehadiran siswa berdasarkan periode
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            onClick={handleExportExcel}
-            className="cursor-pointer"
-          >
-            <Download className="w-4 h-4" />
-            Export Excel
-          </Button>
-          <Button onClick={handleExportPDF} className="cursor-pointer">
-            <FileText className="w-4 h-4" />
-            Export PDF
-          </Button>
-        </div>
+    <>
+      <div className="flex justify-end gap-2 no-print">
+        <Button
+          variant="outline"
+          onClick={handleExportExcel}
+          className="cursor-pointer"
+        >
+          <Download className="w-4 h-4" />
+          Export Excel
+        </Button>
+        <Button onClick={handleExportPDF} className="cursor-pointer">
+          <FileText className="w-4 h-4" />
+          Export PDF
+        </Button>
       </div>
 
       <Card className="no-print">
@@ -561,6 +553,6 @@ export function RekapSiswa() {
           )}
         </CardContent>
       </Card>
-    </div>
+    </>
   );
 }
