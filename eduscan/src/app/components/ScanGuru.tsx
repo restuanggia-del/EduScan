@@ -394,17 +394,7 @@ export function ScanGuru() {
   const totalPulang = riwayatRows.filter((r) => r.jamPulang).length;
 
   return (
-    <div className="p-6 space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold text-foreground">
-          Scan Presensi Guru
-        </h2>
-        <p className="text-muted-foreground">
-          Presensi untuk Guru & Kepala Sekolah. Status Hadir/Terlambat dihitung
-          otomatis berdasarkan jadwal mengajar.
-        </p>
-      </div>
-
+    <>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
           <div className="flex gap-2">
@@ -899,6 +889,6 @@ export function ScanGuru() {
           </Button>
         </DialogContent>
       </Dialog>
-    </div>
+    </>
   );
 }

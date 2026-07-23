@@ -623,14 +623,7 @@ export function ScanSiswa() {
   };
 
   return (
-    <div className="p-6 space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold text-foreground">Scan Presensi</h2>
-        <p className="text-muted-foreground">
-          Scan QR Code siswa untuk presensi masuk dan pulang
-        </p>
-      </div>
-
+    <>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
           <div className="flex gap-2">
@@ -1144,6 +1137,6 @@ export function ScanSiswa() {
           </div>
         </CardContent>
       </Card>
-    </div>
+    </>
   );
 }
