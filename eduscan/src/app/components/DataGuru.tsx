@@ -32,7 +32,19 @@ interface Guru {
   user_id: string | null;
   no_wa: string | null;
   email?: string | null;
+  source: "guru";
 }
+
+interface StaffRow {
+  id: string;
+  nama: string;
+  nip: string | null;
+  email: string | null;
+  staffRole: "kepala_sekolah" | "tu";
+  source: "staff";
+}
+
+type GuruListRow = Guru | StaffRow;
 
 interface KelasOption {
   id: string;
@@ -61,16 +73,25 @@ function defaultJadwalForm(): JadwalForm {
 }
 
 export function DataGuru() {
-  const [guruList, setGuruList] = useState<Guru[]>([]);
+  const [guruList, setGuruList] = useState<GuruListRow[]>([]);
   const [kelasOptions, setKelasOptions] = useState<KelasOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [editingGuru, setEditingGuru] = useState<Guru | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<{
+    id: string;
+    source: "guru" | "staff";
+  } | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [loadingJadwal, setLoadingJadwal] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
+
+  const [isEditStaffOpen, setIsEditStaffOpen] = useState(false);
+  const [editingStaff, setEditingStaff] = useState<StaffRow | null>(null);
+  const [staffFormData, setStaffFormData] = useState({ nama: "", nip: "" });
+  const [submittingStaff, setSubmittingStaff] = useState(false);
+  const [staffErrorMsg, setStaffErrorMsg] = useState("");
 
   const [formData, setFormData] = useState({
     nama: "",
@@ -128,13 +149,94 @@ export function DataGuru() {
       }
     }
 
-    const merged = (guruData || []).map((g) => ({
+    const merged: Guru[] = (guruData || []).map((g) => ({
       ...g,
       email: g.user_id ? emailMap[g.user_id] : g.email || null,
+      source: "guru" as const,
     }));
 
-    setGuruList(merged);
+    const { data: staffData, error: staffError } = await supabase
+      .from("users")
+      .select("id, nama, nip, email, role")
+      .in("role", ["kepala_sekolah", "tu"])
+      .order("nama", { ascending: true });
+
+    if (staffError) {
+      toast.error("Gagal memuat data TU/Kepala Sekolah: " + staffError.message);
+    }
+
+    const staffRows: StaffRow[] = (staffData || []).map((u) => ({
+      id: u.id,
+      nama: u.nama,
+      nip: u.nip,
+      email: u.email,
+      staffRole: u.role as "kepala_sekolah" | "tu",
+      source: "staff" as const,
+    }));
+
+    const combined: GuruListRow[] = [...merged, ...staffRows].sort((a, b) =>
+      a.nama.localeCompare(b.nama),
+    );
+
+    setGuruList(combined);
     setLoading(false);
+  };
+
+  const handleOpenEditStaff = (staff: StaffRow) => {
+    setEditingStaff(staff);
+    setStaffFormData({ nama: staff.nama, nip: staff.nip || "" });
+    setStaffErrorMsg("");
+    setIsEditStaffOpen(true);
+  };
+
+  const handleSubmitStaff = async () => {
+    if (!editingStaff) return;
+    if (!staffFormData.nama.trim()) {
+      setStaffErrorMsg("Nama wajib diisi.");
+      return;
+    }
+
+    setSubmittingStaff(true);
+    const { error } = await supabase
+      .from("users")
+      .update({
+        nama: staffFormData.nama.trim(),
+        nip: staffFormData.nip.trim() || null,
+      })
+      .eq("id", editingStaff.id);
+
+    if (error) {
+      setStaffErrorMsg(error.message);
+      setSubmittingStaff(false);
+      return;
+    }
+
+    toast.success("Data berhasil diperbarui!");
+    setSubmittingStaff(false);
+    setIsEditStaffOpen(false);
+    setEditingStaff(null);
+    fetchGuru();
+  };
+
+  const handleDeleteStaff = async (id: string) => {
+    setDeletingId(id);
+
+    const { data, error } = await supabase.functions.invoke(
+      "delete-akun-staff",
+      {
+        body: { user_id: id },
+      },
+    );
+
+    if (error) {
+      toast.error("Gagal menghapus: " + error.message);
+    } else if (data?.error) {
+      toast.error("Gagal menghapus: " + data.error);
+    } else {
+      toast.success("Akun berhasil dihapus.");
+      fetchGuru();
+    }
+    setDeletingId(null);
   };
 
   const resetForm = () => {
@@ -365,7 +467,7 @@ export function DataGuru() {
         <div>
           <h1 className="text-2xl font-bold">Data Guru</h1>
           <p className="text-muted-foreground text-sm">
-            Kelola data guru biasa & guru wali kelas
+            Kelola data guru biasa, guru wali kelas, TU, dan Kepala Sekolah
           </p>
         </div>
         <Button onClick={handleOpenAdd} className="cursor-pointer">
@@ -403,19 +505,30 @@ export function DataGuru() {
                 </thead>
                 <tbody>
                   {guruList.map((g) => (
-                    <tr key={g.id} className="border-b last:border-0">
+                    <tr
+                      key={`${g.source}-${g.id}`}
+                      className="border-b last:border-0"
+                    >
                       <td className="py-3 pr-4 font-medium">{g.nama}</td>
                       <td className="py-3 pr-4">{g.nip || "-"}</td>
-                      <td className="py-3 pr-4">{g.mata_pelajaran || "-"}</td>
                       <td className="py-3 pr-4">
-                        {g.role_guru === "wali_kelas" ? (
+                        {g.source === "guru" ? g.mata_pelajaran || "-" : "-"}
+                      </td>
+                      <td className="py-3 pr-4">
+                        {g.source === "staff" ? (
+                          g.staffRole === "kepala_sekolah" ? (
+                            <Badge>Kepala Sekolah</Badge>
+                          ) : (
+                            <Badge variant="outline">TU</Badge>
+                          )
+                        ) : g.role_guru === "wali_kelas" ? (
                           <Badge>Wali Kelas</Badge>
                         ) : (
                           <Badge variant="secondary">Biasa</Badge>
                         )}
                       </td>
                       <td className="py-3 pr-4">
-                        {g.role_guru === "wali_kelas"
+                        {g.source === "guru" && g.role_guru === "wali_kelas"
                           ? getNamaKelas(g.kelas_id)
                           : "-"}
                       </td>
@@ -434,7 +547,11 @@ export function DataGuru() {
                             size="sm"
                             variant="ghost"
                             className="cursor-pointer"
-                            onClick={() => handleOpenEdit(g)}
+                            onClick={() =>
+                              g.source === "guru"
+                                ? handleOpenEdit(g)
+                                : handleOpenEditStaff(g)
+                            }
                           >
                             <Edit className="w-4 h-4" />
                           </Button>
@@ -443,7 +560,9 @@ export function DataGuru() {
                             variant="ghost"
                             className="cursor-pointer text-destructive"
                             disabled={deletingId === g.id}
-                            onClick={() => setConfirmDeleteId(g.id)}
+                            onClick={() =>
+                              setConfirmDelete({ id: g.id, source: g.source })
+                            }
                           >
                             <Trash2 className="w-4 h-4" />
                           </Button>
@@ -713,29 +832,101 @@ export function DataGuru() {
       </Dialog>
 
       <Dialog
-        open={confirmDeleteId !== null}
-        onOpenChange={(open) => !open && setConfirmDeleteId(null)}
+        open={isEditStaffOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            setIsEditStaffOpen(false);
+            setEditingStaff(null);
+            setStaffErrorMsg("");
+          }
+        }}
       >
         <DialogContent className="max-w-sm">
           <DialogHeader>
-            <DialogTitle>Hapus Guru</DialogTitle>
+            <DialogTitle>
+              Edit{" "}
+              {editingStaff?.staffRole === "kepala_sekolah"
+                ? "Kepala Sekolah"
+                : "TU"}
+            </DialogTitle>
             <DialogDescription>
-              Apakah kamu yakin ingin menghapus guru ini? Data yang dihapus
+              Perbarui nama & NUPTK akun ini. Email & role tidak bisa diubah
+              dari sini.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Nama Lengkap</Label>
+              <Input
+                value={staffFormData.nama}
+                onChange={(e) =>
+                  setStaffFormData({ ...staffFormData, nama: e.target.value })
+                }
+                placeholder="Masukkan nama"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>NUPTK</Label>
+              <Input
+                value={staffFormData.nip}
+                onChange={(e) =>
+                  setStaffFormData({ ...staffFormData, nip: e.target.value })
+                }
+                placeholder="Masukkan NUPTK"
+              />
+            </div>
+            {editingStaff?.email && (
+              <div className="space-y-2">
+                <Label>Email Akun</Label>
+                <Input value={editingStaff.email} disabled />
+              </div>
+            )}
+            {staffErrorMsg && (
+              <p className="text-sm text-destructive">{staffErrorMsg}</p>
+            )}
+            <Button
+              onClick={handleSubmitStaff}
+              disabled={submittingStaff}
+              className="w-full cursor-pointer"
+            >
+              {submittingStaff ? "Menyimpan..." : "Simpan Perubahan"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={confirmDelete !== null}
+        onOpenChange={(open) => !open && setConfirmDelete(null)}
+      >
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>
+              {confirmDelete?.source === "staff"
+                ? "Hapus Akun TU/Kepala Sekolah"
+                : "Hapus Guru"}
+            </DialogTitle>
+            <DialogDescription>
+              Apakah kamu yakin ingin menghapus data ini? Data yang dihapus
               tidak bisa dikembalikan.
             </DialogDescription>
           </DialogHeader>
           <div className="flex justify-end gap-2 pt-4">
             <button
-              onClick={() => setConfirmDeleteId(null)}
+              onClick={() => setConfirmDelete(null)}
               className="px-4 py-2 rounded-md border border-input text-sm hover:bg-muted cursor-pointer"
             >
               Batal
             </button>
             <button
               onClick={() => {
-                if (confirmDeleteId) {
-                  handleDelete(confirmDeleteId);
-                  setConfirmDeleteId(null);
+                if (confirmDelete) {
+                  if (confirmDelete.source === "guru") {
+                    handleDelete(confirmDelete.id);
+                  } else {
+                    handleDeleteStaff(confirmDelete.id);
+                  }
+                  setConfirmDelete(null);
                 }
               }}
               className="px-4 py-2 rounded-md bg-destructive text-destructive-foreground text-sm hover:bg-destructive/90 cursor-pointer"
