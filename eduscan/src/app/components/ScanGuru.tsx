@@ -26,6 +26,7 @@ import { cn } from "./ui/utils";
 import { supabase } from "../../lib/supabaseClient";
 import { toast } from "sonner";
 import { DaruratGuru } from "./DaruratGuru";
+import { getTodayLocal } from "../../lib/dateUtils";
 
 type StatusGuru =
   | "hadir"
@@ -159,7 +160,7 @@ export function ScanGuru() {
   };
 
   const fetchTodayRecords = async () => {
-    const today = new Date().toISOString().split("T")[0];
+    const today = getTodayLocal();
     const { data, error } = await supabase
       .from("absensi_guru")
       .select("*, guru(nama), users(nama)")
@@ -286,7 +287,7 @@ export function ScanGuru() {
     status: StatusGuru | "pulang",
   ) => {
     setSubmitting(true);
-    const today = new Date().toISOString().split("T")[0];
+    const today = getTodayLocal();
 
     const { error } = await supabase.from("absensi_guru").insert({
       guru_id: target.guru_id,

@@ -14,6 +14,7 @@ import {
 } from "recharts";
 import { supabase } from "../../lib/supabaseClient";
 import { cn } from "./ui/utils";
+import { formatLocalDate, getTodayLocal } from "../../lib/dateUtils";
 
 interface StatHarian {
   hadir: number;
@@ -67,7 +68,7 @@ export function DashboardSiswa() {
 
   const fetchDashboardData = async () => {
     setLoading(true);
-    const today = new Date().toISOString().split("T")[0];
+    const today = getTodayLocal();
 
     await Promise.all([
       fetchStatHarian(today),
@@ -97,7 +98,7 @@ export function DashboardSiswa() {
   };
 
   const fetchRecentActivity = async () => {
-    const today = new Date().toISOString().split("T")[0];
+    const today = getTodayLocal();
     const { data } = await supabase
       .from("absensi_siswa")
       .select("status, waktu_scan, siswa(nama, kelas)")
@@ -134,7 +135,7 @@ export function DashboardSiswa() {
     for (let i = 6; i >= 0; i--) {
       const date = new Date();
       date.setDate(date.getDate() - i);
-      const dateStr = date.toISOString().split("T")[0];
+      const dateStr = formatLocalDate(date);
       const dayLabel = days[date.getDay()];
 
       const { data } = await supabase
@@ -172,8 +173,8 @@ export function DashboardSiswa() {
       const year = date.getFullYear();
       const month = date.getMonth();
 
-      const start = new Date(year, month, 1).toISOString().split("T")[0];
-      const end = new Date(year, month + 1, 0).toISOString().split("T")[0];
+      const start = formatLocalDate(new Date(year, month, 1));
+      const end = formatLocalDate(new Date(year, month + 1, 0));
 
       const { data } = await supabase
         .from("absensi_siswa")

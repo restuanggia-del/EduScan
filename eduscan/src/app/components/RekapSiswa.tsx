@@ -9,6 +9,7 @@ import { useAuth } from "../../lib/AuthContext";
 import { cn } from "./ui/utils";
 import { downloadRekapPdf } from "../../lib/exportTablePdf";
 import { downloadRekapExcel } from "../../lib/exportExcel";
+import { formatLocalDate, getTodayLocal } from "../../lib/dateUtils";
 
 interface RekapData {
   siswaId: string;
@@ -30,9 +31,7 @@ export function RekapSiswa() {
   const isGWK = user?.role === "guru";
 
   const [filterType, setFilterType] = useState<FilterType>("harian");
-  const [selectedDate, setSelectedDate] = useState(
-    new Date().toISOString().split("T")[0],
-  );
+  const [selectedDate, setSelectedDate] = useState(getTodayLocal());
   const [selectedKelas, setSelectedKelas] = useState("");
   const [kelasList, setKelasList] = useState<string[]>([]);
   const [rekapData, setRekapData] = useState<RekapData[]>([]);
@@ -98,8 +97,8 @@ export function RekapSiswa() {
       const sunday = new Date(monday);
       sunday.setDate(monday.getDate() + 6);
       return {
-        start: monday.toISOString().split("T")[0],
-        end: sunday.toISOString().split("T")[0],
+        start: formatLocalDate(monday),
+        end: formatLocalDate(sunday),
       };
     }
 
@@ -107,8 +106,8 @@ export function RekapSiswa() {
       const start = new Date(date.getFullYear(), date.getMonth(), 1);
       const end = new Date(date.getFullYear(), date.getMonth() + 1, 0);
       return {
-        start: start.toISOString().split("T")[0],
-        end: end.toISOString().split("T")[0],
+        start: formatLocalDate(start),
+        end: formatLocalDate(end),
       };
     }
 
@@ -118,16 +117,16 @@ export function RekapSiswa() {
       const start = new Date(date.getFullYear(), isSem1 ? 0 : 6, 1);
       const end = new Date(date.getFullYear(), isSem1 ? 6 : 12, 0);
       return {
-        start: start.toISOString().split("T")[0],
-        end: end.toISOString().split("T")[0],
+        start: formatLocalDate(start),
+        end: formatLocalDate(end),
       };
     }
 
     const start = new Date(date.getFullYear(), 0, 1);
     const end = new Date(date.getFullYear(), 11, 31);
     return {
-      start: start.toISOString().split("T")[0],
-      end: end.toISOString().split("T")[0],
+      start: formatLocalDate(start),
+      end: formatLocalDate(end),
     };
   };
 

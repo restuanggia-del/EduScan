@@ -14,6 +14,7 @@ import {
 import { Label } from "./ui/label";
 import { Button } from "./ui/button";
 import { cn } from "./ui/utils";
+import { getTodayLocal } from "../../lib/dateUtils";
 
 const roleLabels: Record<string, string> = {
   kepala_sekolah: "Kepala Sekolah",
@@ -303,7 +304,7 @@ export function Header({
       });
     });
 
-    const today = new Date().toISOString().split("T")[0];
+    const today = getTodayLocal();
     const { data: absensiData } = await supabase
       .from("absensi_siswa")
       .select("status, tanggal, siswa(nama, kelas)")

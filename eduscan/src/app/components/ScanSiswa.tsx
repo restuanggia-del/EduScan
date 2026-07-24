@@ -24,6 +24,7 @@ import { cn } from "./ui/utils";
 import { supabase } from "../../lib/supabaseClient";
 import { toast } from "sonner";
 import { DaruratSiswa } from "./DaruratSiswa";
+import { getTodayLocal } from "../../lib/dateUtils";
 
 interface AbsensiRecord {
   id: string;
@@ -127,7 +128,7 @@ export function ScanSiswa() {
   };
 
   const fetchTodayAbsensi = async () => {
-    const today = new Date().toISOString().split("T")[0];
+    const today = getTodayLocal();
     const { data, error } = await supabase
       .from("absensi_siswa")
       .select("*, siswa(nama, nisn, kelas, foto_url)")
@@ -308,7 +309,7 @@ export function ScanSiswa() {
     status: "hadir" | "izin" | "sakit" | "alfa",
   ) => {
     setManualLoading(true);
-    const today = new Date().toISOString().split("T")[0];
+    const today = getTodayLocal();
 
     const { data: existing } = await supabase
       .from("absensi_siswa")
@@ -410,7 +411,7 @@ export function ScanSiswa() {
         return;
       }
 
-      const today = new Date().toISOString().split("T")[0];
+      const today = getTodayLocal();
       const jamSekarang = getCurrentTime();
       const menitSekarang = toMenit(jamSekarang);
 
