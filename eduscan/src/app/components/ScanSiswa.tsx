@@ -25,6 +25,7 @@ import { supabase } from "../../lib/supabaseClient";
 import { toast } from "sonner";
 import { DaruratSiswa } from "./DaruratSiswa";
 import { getTodayLocal } from "../../lib/dateUtils";
+import { sendWhatsAppMessage } from "../../lib/waGateway";
 
 interface AbsensiRecord {
   id: string;
@@ -293,14 +294,9 @@ export function ScanSiswa() {
 
     if (!message.trim()) return;
 
-    try {
-      await fetch("https://api.fonnte.com/send", {
-        method: "POST",
-        headers: { Authorization: token, "Content-Type": "application/json" },
-        body: JSON.stringify({ target: nomor, message }),
-      });
-    } catch (err) {
-      console.error("Gagal kirim WA:", err);
+    const result = await sendWhatsAppMessage(token, nomor, message);
+    if (!result.success) {
+      console.error("Gagal kirim WA:", result.message);
     }
   };
 

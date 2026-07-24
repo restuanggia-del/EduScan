@@ -14,6 +14,7 @@ import { Switch } from "./ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import { supabase } from "../../lib/supabaseClient";
 import { toast } from "sonner";
+import { sendWhatsAppMessage } from "../../lib/waGateway";
 
 export function Pengaturan() {
   const [settings, setSettings] = useState({
@@ -190,31 +191,20 @@ export function Pengaturan() {
       return;
     }
     if (!settings.whatsappToken) {
-      toast.error("Masukkan Fonnte API Token terlebih dahulu");
+      toast.error("Masukkan Wablas API Token terlebih dahulu");
       return;
     }
 
-    try {
-      const response = await fetch("https://api.fonnte.com/send", {
-        method: "POST",
-        headers: {
-          Authorization: settings.whatsappToken,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          target: testNumber,
-          message: `*Test Notifikasi EduScan*\n\nNotifikasi WhatsApp berhasil dikonfigurasi!\n\n${settings.namaSekolah}`,
-        }),
-      });
+    const result = await sendWhatsAppMessage(
+      settings.whatsappToken,
+      testNumber,
+      `*Test Notifikasi EduScan*\n\nNotifikasi WhatsApp berhasil dikonfigurasi!\n\n${settings.namaSekolah}`,
+    );
 
-      const result = await response.json();
-      if (result.status) {
-        toast.success("Pesan test berhasil dikirim ke " + testNumber);
-      } else {
-        toast.error("Gagal kirim: " + (result.reason || "Unknown error"));
-      }
-    } catch {
-      toast.error("Gagal menghubungi Fonnte API");
+    if (result.success) {
+      toast.success("Pesan test berhasil dikirim ke " + testNumber);
+    } else {
+      toast.error("Gagal kirim: " + result.message);
     }
   };
 
@@ -405,7 +395,7 @@ export function Pengaturan() {
             <CardHeader>
               <CardTitle>Konfigurasi WhatsApp Gateway</CardTitle>
               <CardDescription>
-                Integrasi dengan Fonnte untuk notifikasi WhatsApp otomatis
+                Integrasi dengan Wablas untuk notifikasi WhatsApp otomatis
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -428,7 +418,7 @@ export function Pengaturan() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="whatsappToken">Fonnte API Token</Label>
+                <Label htmlFor="whatsappToken">Wablas API Token</Label>
                 <Input
                   id="whatsappToken"
                   type="password"
@@ -436,17 +426,20 @@ export function Pengaturan() {
                   onChange={(e) =>
                     setSettings({ ...settings, whatsappToken: e.target.value })
                   }
-                  placeholder="Masukkan token API Fonnte"
+                  placeholder="TOKEN.SECRETKEY"
                 />
                 <p className="text-xs text-muted-foreground">
-                  Dapatkan token API dari{" "}
+                  Gabungkan Token dan Secret Key dari dashboard Wablas (Device
+                  &gt; Settings) dengan format{" "}
+                  <code className="font-mono">TOKEN.SECRETKEY</code>. Dapatkan
+                  dari{" "}
                   <a
-                    href="https://fonnte.com"
+                    href="https://solo.wablas.com"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-primary hover:underline"
                   >
-                    fonnte.com
+                    solo.wablas.com
                   </a>
                 </p>
               </div>

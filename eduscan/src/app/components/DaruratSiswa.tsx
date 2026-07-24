@@ -5,6 +5,7 @@ import { Button } from "./ui/button";
 import { cn } from "./ui/utils";
 import { supabase } from "../../lib/supabaseClient";
 import { toast } from "sonner";
+import { sendWhatsAppMessage } from "../../lib/waGateway";
 
 interface Kelas {
   id: string;
@@ -160,17 +161,13 @@ export function DaruratSiswa() {
         .replace(/\[nama\]/gi, s.nama)
         .replace(/\[jam\]/gi, jamSekarang);
 
-      try {
-        await fetch("https://api.fonnte.com/send", {
-          method: "POST",
-          headers: {
-            Authorization: settingsData.whatsapp_token,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ target: nomor, message }),
-        });
-      } catch (err) {
-        console.error("Gagal kirim WA darurat:", err);
+      const result = await sendWhatsAppMessage(
+        settingsData.whatsapp_token,
+        nomor,
+        message,
+      );
+      if (!result.success) {
+        console.error("Gagal kirim WA darurat:", result.message);
       }
     }
   };
@@ -209,17 +206,13 @@ export function DaruratSiswa() {
 
       const message = templateMap[e.status].replace(/\[nama\]/gi, e.nama);
 
-      try {
-        await fetch("https://api.fonnte.com/send", {
-          method: "POST",
-          headers: {
-            Authorization: settingsData.whatsapp_token,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ target: nomor, message }),
-        });
-      } catch (err) {
-        console.error("Gagal kirim WA manual:", err);
+      const result = await sendWhatsAppMessage(
+        settingsData.whatsapp_token,
+        nomor,
+        message,
+      );
+      if (!result.success) {
+        console.error("Gagal kirim WA manual:", result.message);
       }
     }
   };
