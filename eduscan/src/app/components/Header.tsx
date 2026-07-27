@@ -15,6 +15,7 @@ import { Label } from "./ui/label";
 import { Button } from "./ui/button";
 import { cn } from "./ui/utils";
 import { getTodayLocal } from "../../lib/dateUtils";
+import { WhatsAppStatusBadge } from "./WhatsAppStatusBadge";
 
 const roleLabels: Record<string, string> = {
   kepala_sekolah: "Kepala Sekolah",
@@ -400,6 +401,7 @@ export function Header({
         </div>
 
         <div className="flex items-center gap-3">
+          <WhatsAppStatusBadge />
           <div className="relative" ref={bellRef}>
             <button
               onClick={() => {
