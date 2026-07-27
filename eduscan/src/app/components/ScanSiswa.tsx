@@ -25,7 +25,7 @@ import { supabase } from "../../lib/supabaseClient";
 import { toast } from "sonner";
 import { DaruratSiswa } from "./DaruratSiswa";
 import { getTodayLocal } from "../../lib/dateUtils";
-import { sendWhatsAppMessage } from "../../lib/waGateway";
+import { sendWhatsAppMessage, logNotifikasiGagal } from "../../lib/waGateway";
 
 interface AbsensiRecord {
   id: string;
@@ -297,12 +297,19 @@ export function ScanSiswa() {
     const result = await sendWhatsAppMessage(token, nomor, message);
     if (!result.success) {
       console.error("Gagal kirim WA:", result.message);
+      // Simpan ke antrian retry supaya tidak hilang (misal device lagi disconnect)
+      logNotifikasiGagal({
+        phone: nomor,
+        message,
+        jenis: `presensi_${type}`,
+        error: result.message,
+      });
     }
   };
 
   const handleManualAbsensi = async (
     siswa: Siswa,
-    status: "hadir" | "izin" | "sakit" | "alfa",
+    status: "hadir" | "terlambat" | "izin" | "sakit" | "alfa",
   ) => {
     setManualLoading(true);
     const today = getTodayLocal();
@@ -325,7 +332,9 @@ export function ScanSiswa() {
       tanggal: today,
       status,
       keterangan:
-        status === "hadir" ? "Input manual - kartu ketinggalan" : status,
+        status === "hadir" || status === "terlambat"
+          ? "Input manual - kartu ketinggalan"
+          : status,
     });
 
     if (error) {
@@ -651,7 +660,7 @@ export function ScanSiswa() {
               )}
             >
               <UserX className="w-4 h-4 inline mr-1" />
-              Input Manual (Hadir/Izin/Sakit/Alfa)
+              Input Manual (Hadir/Terlambat/Izin/Sakit/Alfa)
             </button>
             <button
               onClick={() => {
@@ -879,6 +888,15 @@ export function ScanSiswa() {
                                 className="px-2.5 py-1 rounded-md bg-primary/10 text-primary text-xs font-medium hover:bg-primary/20 transition-colors cursor-pointer"
                               >
                                 Hadir
+                              </button>
+                              <button
+                                onClick={() =>
+                                  handleManualAbsensi(siswa, "terlambat")
+                                }
+                                disabled={manualLoading}
+                                className="px-2.5 py-1 rounded-md bg-amber-100 text-amber-700 text-xs font-medium hover:bg-amber-200 transition-colors cursor-pointer"
+                              >
+                                Terlambat
                               </button>
                               <button
                                 onClick={() =>
