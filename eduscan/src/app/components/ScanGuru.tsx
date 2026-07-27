@@ -2,7 +2,6 @@ import { useState, useEffect, useRef } from "react";
 import { Html5Qrcode } from "html5-qrcode";
 import {
   Search,
-  CheckCircle,
   AlertTriangle,
   Zap,
   Camera,
@@ -420,7 +419,7 @@ export function ScanGuru() {
               )}
             >
               <UserX className="w-4 h-4 inline mr-1" />
-              Input Manual (Izin/Sakit/Alfa/TS)
+              Input Manual (Hadir/Terlambat/Izin/Sakit/Alfa/TS)
             </button>
             <button
               onClick={() => setModeAktif("darurat")}
@@ -575,99 +574,105 @@ export function ScanGuru() {
                   <div className="space-y-2 max-h-[480px] overflow-y-auto">
                     {filteredTargets.map((t) => {
                       const masukDone = sudahAbsen(t.key, "masuk");
-                      const pulangDone = sudahAbsen(t.key, "pulang");
+                      const recordMasuk = todayRecords.find(
+                        (r) => r.key === t.key && r.jenis === "masuk",
+                      );
                       return (
                         <div
                           key={t.key}
-                          className="flex flex-col gap-2 border rounded-lg p-3"
+                          className={cn(
+                            "flex items-center justify-between p-3 rounded-lg border",
+                            masukDone
+                              ? "bg-muted/50 opacity-70"
+                              : "bg-background",
+                          )}
                         >
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <p className="font-medium text-sm">
-                                {t.nama}{" "}
-                                {t.peran === "kepala_sekolah" && (
-                                  <Badge variant="secondary" className="ml-1">
-                                    Kepala Sekolah
-                                  </Badge>
-                                )}
-                                {t.peran === "tu" && (
-                                  <Badge variant="secondary" className="ml-1">
-                                    TU
-                                  </Badge>
-                                )}
-                              </p>
-                              <p className="text-xs text-muted-foreground">
-                                {t.nip_email}
-                              </p>
-                            </div>
-                            <div className="flex gap-2">
-                              <Button
-                                size="sm"
-                                variant={masukDone ? "outline" : "default"}
-                                disabled={masukDone}
-                                className="cursor-pointer"
-                                onClick={() => handleAbsenMasukClick(t)}
-                              >
-                                {masukDone ? (
-                                  <>
-                                    <CheckCircle className="w-4 h-4 mr-1" />{" "}
-                                    Masuk
-                                  </>
-                                ) : (
-                                  "Presensi Masuk"
-                                )}
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant={pulangDone ? "outline" : "secondary"}
-                                disabled={pulangDone || !masukDone}
-                                className="cursor-pointer"
-                                onClick={() => handleAbsenPulangClick(t)}
-                              >
-                                {pulangDone ? (
-                                  <>
-                                    <CheckCircle className="w-4 h-4 mr-1" />{" "}
-                                    Pulang
-                                  </>
-                                ) : (
-                                  "Presensi Pulang"
-                                )}
-                              </Button>
-                            </div>
+                          <div>
+                            <p className="font-medium text-sm">
+                              {t.nama}{" "}
+                              {t.peran === "kepala_sekolah" && (
+                                <Badge variant="secondary" className="ml-1">
+                                  Kepala Sekolah
+                                </Badge>
+                              )}
+                              {t.peran === "tu" && (
+                                <Badge variant="secondary" className="ml-1">
+                                  TU
+                                </Badge>
+                              )}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {t.nip_email}
+                            </p>
                           </div>
 
-                          {!masukDone && (
-                            <div className="flex gap-2 pt-2 border-t">
-                              <button
-                                onClick={() => saveAbsensi(t, "masuk", "izin")}
-                                disabled={submitting}
-                                className="px-2.5 py-1 rounded-md bg-blue-100 text-blue-700 text-xs font-medium hover:bg-blue-200 transition-colors cursor-pointer"
+                          <div className="flex items-center gap-2">
+                            {masukDone ? (
+                              <span
+                                className={cn(
+                                  "px-2.5 py-1 rounded-full text-xs font-medium",
+                                  statusColor[recordMasuk?.status || "hadir"],
+                                )}
                               >
-                                Izin
-                              </button>
-                              <button
-                                onClick={() => saveAbsensi(t, "masuk", "sakit")}
-                                disabled={submitting}
-                                className="px-2.5 py-1 rounded-md bg-green-100 text-green-700 text-xs font-medium hover:bg-green-200 transition-colors cursor-pointer"
-                              >
-                                Sakit
-                              </button>
-                              <button
-                                onClick={() => saveAbsensi(t, "masuk", "alfa")}
-                                disabled={submitting}
-                                className="px-2.5 py-1 rounded-md bg-destructive/10 text-destructive text-xs font-medium hover:bg-destructive/20 transition-colors cursor-pointer"
-                              >
-                                Alfa
-                              </button>
-                              <button
-                                onClick={() => saveAbsensi(t, "masuk", "ts")}
-                                disabled={submitting}
-                                className="px-2.5 py-1 rounded-md bg-purple-100 text-purple-700 text-xs font-medium hover:bg-purple-200 transition-colors cursor-pointer"
-                              >
-                                TS
-                              </button>
-                            </div>
-                          )}
+                                {statusLabel[recordMasuk?.status || "hadir"]}
+                              </span>
+                            ) : (
+                              <>
+                                <button
+                                  onClick={() =>
+                                    saveAbsensi(t, "masuk", "hadir")
+                                  }
+                                  disabled={submitting}
+                                  className="px-2.5 py-1 rounded-md bg-primary/10 text-primary text-xs font-medium hover:bg-primary/20 transition-colors cursor-pointer"
+                                >
+                                  Hadir
+                                </button>
+                                <button
+                                  onClick={() =>
+                                    saveAbsensi(t, "masuk", "terlambat")
+                                  }
+                                  disabled={submitting}
+                                  className="px-2.5 py-1 rounded-md bg-amber-100 text-amber-700 text-xs font-medium hover:bg-amber-200 transition-colors cursor-pointer"
+                                >
+                                  Terlambat
+                                </button>
+                                <button
+                                  onClick={() =>
+                                    saveAbsensi(t, "masuk", "izin")
+                                  }
+                                  disabled={submitting}
+                                  className="px-2.5 py-1 rounded-md bg-blue-100 text-blue-700 text-xs font-medium hover:bg-blue-200 transition-colors cursor-pointer"
+                                >
+                                  Izin
+                                </button>
+                                <button
+                                  onClick={() =>
+                                    saveAbsensi(t, "masuk", "sakit")
+                                  }
+                                  disabled={submitting}
+                                  className="px-2.5 py-1 rounded-md bg-green-100 text-green-700 text-xs font-medium hover:bg-green-200 transition-colors cursor-pointer"
+                                >
+                                  Sakit
+                                </button>
+                                <button
+                                  onClick={() =>
+                                    saveAbsensi(t, "masuk", "alfa")
+                                  }
+                                  disabled={submitting}
+                                  className="px-2.5 py-1 rounded-md bg-destructive/10 text-destructive text-xs font-medium hover:bg-destructive/20 transition-colors cursor-pointer"
+                                >
+                                  Alfa
+                                </button>
+                                <button
+                                  onClick={() => saveAbsensi(t, "masuk", "ts")}
+                                  disabled={submitting}
+                                  className="px-2.5 py-1 rounded-md bg-purple-100 text-purple-700 text-xs font-medium hover:bg-purple-200 transition-colors cursor-pointer"
+                                >
+                                  TS
+                                </button>
+                              </>
+                            )}
+                          </div>
                         </div>
                       );
                     })}
