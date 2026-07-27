@@ -1,12 +1,54 @@
+import { supabase } from "./supabaseClient";
+
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
 const SEND_WHATSAPP_FUNCTION_URL = `${supabaseUrl.replace(/\/$/, "")}/functions/v1/send-whatsapp`;
+const WABLAS_STATUS_FUNCTION_URL = `${supabaseUrl.replace(/\/$/, "")}/functions/v1/wablas-status`;
 
 export interface SendWaResult {
     success: boolean;
     message: string;
 }
 
+export interface DeviceStatusResult {
+    connected: boolean;
+    checkedAt: Date;
+    error?: string;
+}
+
+export async function checkWablasConnection(
+    token: string,
+): Promise<DeviceStatusResult> {
+    if (!token) {
+        return { connected: false, checkedAt: new Date(), error: "Token belum diisi" };
+    }
+
+    try {
+        const response = await fetch(WABLAS_STATUS_FUNCTION_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ token }),
+        });
+        const result = await response.json().catch(() => null);
+
+        if (!result?.status) {
+            return {
+                connected: false,
+                checkedAt: new Date(),
+                error: result?.message || "Gagal cek status",
+            };
+        }
+        return { connected: !!result.connected, checkedAt: new Date() };
+    } catch (err) {
+        return {
+            connected: false,
+            checkedAt: new Date(),
+            error: "Gagal menghubungi fungsi cek status",
+        };
+    }
+}
+
 export interface SendWaOptions {
+
     random?: boolean;
 }
 
@@ -63,32 +105,14 @@ export interface BulkWaResult {
     failed: number;
     failedTargets: string[];
 }
-
 export interface BulkWaOptions extends SendWaOptions {
-    /** Berapa pesan dikirim bersamaan dalam 1 batch. Default: 2 — samakan
-     *  dengan "Limit Message" di dashboard Wablas (Device > Edit >
-     *  Performance Settings), karena paket device menentukan batas maksimal
-     *  pesan per batch (untuk paket Medium biasanya 1-2). */
+
     batchSize?: number;
-    /** Jeda (ms) antar batch, supaya tidak membanjiri WhatsApp sekaligus.
-     *  Default: 15000 (15 detik) — samakan dengan "Delay Sending" di
-     *  dashboard Wablas (Device > Edit > Performance Settings). */
+
     delayBetweenBatchMs?: number;
-    /** Callback opsional untuk update progress ke UI, misal untuk toast. */
     onProgress?: (sent: number, total: number) => void;
 }
 
-/**
- * Kirim banyak pesan WhatsApp SEKALIGUS dengan aman: dipecah per-batch
- * (default 5 pesan/batch) dengan jeda antar batch, dan opsional menyebar
- * pengiriman ke beberapa device (random) supaya tidak membebani 1 nomor
- * terus-menerus.
- *
- * PENTING: untuk notifikasi massal (ratusan wali murid), JANGAN kirim
- * satu-satu tanpa jeda — itu pola yang paling rawan bikin nomor WhatsApp
- * kena deteksi spam / diblokir. Selalu pakai fungsi ini untuk pengiriman
- * massal, bukan memanggil sendWhatsAppMessage() di dalam loop biasa.
- */
 export async function sendWhatsAppBulk(
     token: string,
     targets: BulkWaTarget[],
@@ -130,4 +154,95 @@ export async function sendWhatsAppBulk(
     }
 
     return { sent, failed, failedTargets };
+}
+
+const MAX_PERCOBAAN_RETRY = 5;
+
+export async function logNotifikasiGagal(params: {
+    phone: string;
+    message: string;
+    jenis?: string;
+    error?: string;
+}) {
+    const { error } = await supabase.from("wa_notifikasi_gagal").insert({
+        phone: params.phone,
+        message: params.message,
+        jenis: params.jenis ?? "lainnya",
+        error_terakhir: params.error ?? null,
+    });
+    if (error) {
+        console.error("Gagal menyimpan ke antrian retry WA:", error.message);
+    }
+}
+
+export interface RetryNotifikasiResult {
+    totalDicoba: number;
+    berhasil: number;
+    masihGagal: number;
+    gagalPermanen: number;
+}
+
+export async function retryNotifikasiGagal(
+    token: string,
+): Promise<RetryNotifikasiResult> {
+    const { data: pendingRows, error } = await supabase
+        .from("wa_notifikasi_gagal")
+        .select("id, phone, message, percobaan")
+        .eq("status", "pending")
+        .order("created_at", { ascending: true })
+        .limit(100);
+
+    if (error || !pendingRows || pendingRows.length === 0) {
+        return { totalDicoba: 0, berhasil: 0, masihGagal: 0, gagalPermanen: 0 };
+    }
+
+    let berhasil = 0;
+    let masihGagal = 0;
+    let gagalPermanen = 0;
+
+    for (const row of pendingRows) {
+        const result = await sendWhatsAppMessage(token, row.phone, row.message, {
+            random: true,
+        });
+
+        if (result.success) {
+            berhasil++;
+            await supabase
+                .from("wa_notifikasi_gagal")
+                .update({ status: "sent", last_attempt_at: new Date().toISOString() })
+                .eq("id", row.id);
+        } else {
+            const percobaanBaru = (row.percobaan ?? 1) + 1;
+            const permanen = percobaanBaru > MAX_PERCOBAAN_RETRY;
+            if (permanen) gagalPermanen++;
+            else masihGagal++;
+
+            await supabase
+                .from("wa_notifikasi_gagal")
+                .update({
+                    percobaan: percobaanBaru,
+                    status: permanen ? "gagal_permanen" : "pending",
+                    error_terakhir: result.message,
+                    last_attempt_at: new Date().toISOString(),
+                })
+                .eq("id", row.id);
+        }
+
+        await new Promise((resolve) => setTimeout(resolve, 15000));
+    }
+
+    return {
+        totalDicoba: pendingRows.length,
+        berhasil,
+        masihGagal,
+        gagalPermanen,
+    };
+}
+
+export async function hitungNotifikasiGagalPending(): Promise<number> {
+    const { count } = await supabase
+        .from("wa_notifikasi_gagal")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "pending");
+    return count ?? 0;
 }

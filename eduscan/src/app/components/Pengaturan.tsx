@@ -14,7 +14,11 @@ import { Switch } from "./ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import { supabase } from "../../lib/supabaseClient";
 import { toast } from "sonner";
-import { sendWhatsAppMessage } from "../../lib/waGateway";
+import {
+  sendWhatsAppMessage,
+  retryNotifikasiGagal,
+  hitungNotifikasiGagalPending,
+} from "../../lib/waGateway";
 
 export function Pengaturan() {
   const [settings, setSettings] = useState({
@@ -34,6 +38,8 @@ export function Pengaturan() {
   });
 
   const [testNumber, setTestNumber] = useState("");
+  const [pendingRetryCount, setPendingRetryCount] = useState(0);
+  const [retryingWa, setRetryingWa] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -55,6 +61,7 @@ export function Pengaturan() {
   useEffect(() => {
     fetchSettings();
     fetchJadwalSekolah();
+    hitungNotifikasiGagalPending().then(setPendingRetryCount);
   }, []);
 
   const fetchJadwalSekolah = async () => {
@@ -206,6 +213,26 @@ export function Pengaturan() {
     } else {
       toast.error("Gagal kirim: " + result.message);
     }
+  };
+
+  const handleRetryNotifikasi = async () => {
+    if (!settings.whatsappToken) {
+      toast.error("Masukkan Wablas API Token terlebih dahulu");
+      return;
+    }
+    setRetryingWa(true);
+    const result = await retryNotifikasiGagal(settings.whatsappToken);
+    setRetryingWa(false);
+
+    if (result.totalDicoba === 0) {
+      toast.info("Tidak ada notifikasi yang perlu di-retry");
+    } else {
+      toast.success(
+        `Retry selesai: ${result.berhasil} berhasil, ${result.masihGagal} masih gagal (akan dicoba lagi nanti), ${result.gagalPermanen} dihentikan (sudah 5x gagal).`,
+      );
+    }
+    const newCount = await hitungNotifikasiGagalPending();
+    setPendingRetryCount(newCount);
   };
 
   if (loading) {
@@ -459,6 +486,36 @@ export function Pengaturan() {
                   >
                     <Send className="w-4 h-4" />
                     Kirim Test
+                  </Button>
+                </div>
+              </div>
+
+              <div className="border-t pt-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium">Antrian Retry Notifikasi</p>
+                    <p className="text-xs text-muted-foreground">
+                      Notifikasi yang gagal terkirim (misal device Wablas sempat
+                      disconnect) disimpan di sini, tidak hilang.
+                      {pendingRetryCount > 0 && (
+                        <>
+                          {" "}
+                          Saat ini ada{" "}
+                          <span className="font-medium text-amber-600">
+                            {pendingRetryCount} notifikasi
+                          </span>{" "}
+                          menunggu dikirim ulang.
+                        </>
+                      )}
+                    </p>
+                  </div>
+                  <Button
+                    onClick={handleRetryNotifikasi}
+                    variant="outline"
+                    disabled={pendingRetryCount === 0 || retryingWa}
+                    className="cursor-pointer whitespace-nowrap"
+                  >
+                    {retryingWa ? "Mengirim ulang..." : "Retry Semua"}
                   </Button>
                 </div>
               </div>
