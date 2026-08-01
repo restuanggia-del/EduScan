@@ -37,6 +37,9 @@ export async function checkWablasConnection(
                 error: result?.message || "Gagal cek status",
             };
         }
+
+        console.debug("[checkWablasConnection] raw response Wablas:", result.raw);
+
         return { connected: !!result.connected, checkedAt: new Date() };
     } catch (err) {
         return {
@@ -48,7 +51,6 @@ export async function checkWablasConnection(
 }
 
 export interface SendWaOptions {
-
     random?: boolean;
 }
 
@@ -106,7 +108,6 @@ export interface BulkWaResult {
     failedTargets: string[];
 }
 export interface BulkWaOptions extends SendWaOptions {
-
     batchSize?: number;
 
     delayBetweenBatchMs?: number;

@@ -1,4 +1,3 @@
-
 const corsHeaders = {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Headers":
@@ -26,21 +25,51 @@ Deno.serve(async (req: Request) => {
             );
         }
 
-        const wablasResponse = await fetch(
-            `${WABLAS_BASE_URL}/api/device/info?token=${encodeURIComponent(token)}`,
-            { method: "GET" },
+        const bareToken = token.split(".")[0];
+
+        async function callDeviceInfo(tokenToUse: string) {
+            const res = await fetch(
+                `${WABLAS_BASE_URL}/api/device/info?token=${encodeURIComponent(tokenToUse)}`,
+                { method: "GET" },
+            );
+            return res.json().catch(() => null);
+        }
+
+        let result = await callDeviceInfo(bareToken);
+        let usedToken = "bare";
+
+        if (result?.status === false) {
+            result = await callDeviceInfo(token);
+            usedToken = "full";
+        }
+
+        const explicitPaths = [
+            result?.data?.status,
+            result?.data?.whatsapp?.status,
+            result?.data?.device?.status,
+            result?.data?.[0]?.status,
+            result?.status_device,
+            result?.device_status,
+        ];
+
+        let connected = explicitPaths.some(
+            (v) => v === "connected" || v === true || v === "Connected",
         );
 
-        const result = await wablasResponse.json().catch(() => null);
-
-        const connected =
-            result?.data?.status === "connected" ||
-            result?.data?.whatsapp?.status === "connected";
+        if (!connected) {
+            const flat = JSON.stringify(result).toLowerCase();
+            if (flat.includes('"connected"') && !flat.includes('"disconnected"')) {
+                connected = true;
+            } else if (flat.includes('status":"connected"')) {
+                connected = true;
+            }
+        }
 
         return new Response(
             JSON.stringify({
                 status: true,
                 connected,
+                usedToken,
                 raw: result,
             }),
             { headers: { ...corsHeaders, "Content-Type": "application/json" } },
