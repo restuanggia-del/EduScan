@@ -14,11 +14,7 @@ import { Switch } from "./ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import { supabase } from "../../lib/supabaseClient";
 import { toast } from "sonner";
-import {
-  sendWhatsAppMessage,
-  retryNotifikasiGagal,
-  hitungNotifikasiGagalPending,
-} from "../../lib/waGateway";
+import { sendWhatsAppMessage } from "../../lib/waGateway";
 
 export function Pengaturan() {
   const [settings, setSettings] = useState({
@@ -35,11 +31,14 @@ export function Pengaturan() {
     templateIzin: "",
     templateSakit: "",
     templateAlfa: "",
+
+    rekapPagiEnabled: true,
+    rekapPagiJam: "09:00",
+    rekapPulangEnabled: true,
+    rekapPulangJam: "15:00",
   });
 
-  const [testNumber, setTestNumber] = useState("");
-  const [pendingRetryCount, setPendingRetryCount] = useState(0);
-  const [retryingWa, setRetryingWa] = useState(false);
+  const [testGroupId, setTestGroupId] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -61,7 +60,6 @@ export function Pengaturan() {
   useEffect(() => {
     fetchSettings();
     fetchJadwalSekolah();
-    hitungNotifikasiGagalPending().then(setPendingRetryCount);
   }, []);
 
   const fetchJadwalSekolah = async () => {
@@ -121,7 +119,7 @@ export function Pengaturan() {
     } else if (data) {
       setSettings({
         namaSekolah: data.nama_sekolah,
-        whatsappEnabled: data.whatsapp_enabled,
+        whatsappEnabled: data.whatsapp_enabled ?? true,
         whatsappToken: data.whatsapp_token || "",
         notifMasuk: data.notif_masuk,
         notifPulang: data.notif_pulang,
@@ -133,6 +131,11 @@ export function Pengaturan() {
         templateIzin: data.template_izin || "",
         templateSakit: data.template_sakit || "",
         templateAlfa: data.template_alfa || "",
+
+        rekapPagiEnabled: data.rekap_pagi_enabled ?? true,
+        rekapPagiJam: (data.rekap_pagi_jam || "09:00").slice(0, 5),
+        rekapPulangEnabled: data.rekap_pulang_enabled ?? true,
+        rekapPulangJam: (data.rekap_pulang_jam || "15:00").slice(0, 5),
       });
     }
     setLoading(false);
@@ -157,6 +160,11 @@ export function Pengaturan() {
         template_izin: settings.templateIzin,
         template_sakit: settings.templateSakit,
         template_alfa: settings.templateAlfa,
+
+        rekap_pagi_enabled: settings.rekapPagiEnabled,
+        rekap_pagi_jam: settings.rekapPagiJam,
+        rekap_pulang_enabled: settings.rekapPulangEnabled,
+        rekap_pulang_jam: settings.rekapPulangJam,
       })
       .eq("id", 1)
       .select();
@@ -187,14 +195,18 @@ export function Pengaturan() {
         templateIzin: saved.template_izin || "",
         templateSakit: saved.template_sakit || "",
         templateAlfa: saved.template_alfa || "",
+        rekapPagiEnabled: saved.rekap_pagi_enabled,
+        rekapPagiJam: (saved.rekap_pagi_jam || "09:00").slice(0, 5),
+        rekapPulangEnabled: saved.rekap_pulang_enabled,
+        rekapPulangJam: (saved.rekap_pulang_jam || "15:00").slice(0, 5),
       });
     }
     setIsSaving(false);
   };
 
-  const handleTestWhatsApp = async () => {
-    if (!testNumber) {
-      toast.error("Masukkan nomor WhatsApp terlebih dahulu");
+  const handleTestGroup = async () => {
+    if (!testGroupId) {
+      toast.error("Masukkan Group ID WhatsApp terlebih dahulu");
       return;
     }
     if (!settings.whatsappToken) {
@@ -204,35 +216,15 @@ export function Pengaturan() {
 
     const result = await sendWhatsAppMessage(
       settings.whatsappToken,
-      testNumber,
-      `*Test Notifikasi EduScan*\n\nNotifikasi WhatsApp berhasil dikonfigurasi!\n\n${settings.namaSekolah}`,
+      testGroupId,
+      `Test Rekap Presensi EduScan\n\nKoneksi ke grup berhasil dikonfigurasi!\n\n${settings.namaSekolah}`,
     );
 
     if (result.success) {
-      toast.success("Pesan test berhasil dikirim ke " + testNumber);
+      toast.success("Pesan test berhasil dikirim ke grup");
     } else {
       toast.error("Gagal kirim: " + result.message);
     }
-  };
-
-  const handleRetryNotifikasi = async () => {
-    if (!settings.whatsappToken) {
-      toast.error("Masukkan Wablas API Token terlebih dahulu");
-      return;
-    }
-    setRetryingWa(true);
-    const result = await retryNotifikasiGagal(settings.whatsappToken);
-    setRetryingWa(false);
-
-    if (result.totalDicoba === 0) {
-      toast.info("Tidak ada notifikasi yang perlu di-retry");
-    } else {
-      toast.success(
-        `Retry selesai: ${result.berhasil} berhasil, ${result.masihGagal} masih gagal (akan dicoba lagi nanti), ${result.gagalPermanen} dihentikan (sudah 5x gagal).`,
-      );
-    }
-    const newCount = await hitungNotifikasiGagalPending();
-    setPendingRetryCount(newCount);
   };
 
   if (loading) {
@@ -262,9 +254,9 @@ export function Pengaturan() {
             <Clock className="w-4 h-4 mr-2" />
             Presensi
           </TabsTrigger>
-          <TabsTrigger value="whatsapp" className="cursor-pointer">
+          <TabsTrigger value="rekap-grup" className="cursor-pointer">
             <MessageSquare className="w-4 h-4 mr-2" />
-            WhatsApp
+            Rekap Grup WA
           </TabsTrigger>
         </TabsList>
 
@@ -417,12 +409,13 @@ export function Pengaturan() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="whatsapp" className="space-y-6">
+        <TabsContent value="rekap-grup" className="space-y-6">
           <Card>
             <CardHeader>
               <CardTitle>Konfigurasi WhatsApp Gateway</CardTitle>
               <CardDescription>
-                Integrasi dengan Wablas untuk notifikasi WhatsApp otomatis
+                Integrasi dengan Wablas untuk kirim rekap presensi otomatis ke
+                grup WhatsApp tiap kelas
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -472,15 +465,15 @@ export function Pengaturan() {
               </div>
 
               <div className="border-t pt-4 space-y-3">
-                <p className="font-medium">Test Notifikasi</p>
+                <p className="font-medium">Test Kirim ke Grup</p>
                 <div className="flex gap-2">
                   <Input
-                    placeholder="Nomor WhatsApp (contoh: 6281234567890)"
-                    value={testNumber}
-                    onChange={(e) => setTestNumber(e.target.value)}
+                    placeholder="Group ID (contoh: 12036xxxxxxxxx@g.us)"
+                    value={testGroupId}
+                    onChange={(e) => setTestGroupId(e.target.value)}
                   />
                   <Button
-                    onClick={handleTestWhatsApp}
+                    onClick={handleTestGroup}
                     variant="outline"
                     className="cursor-pointer"
                   >
@@ -488,35 +481,90 @@ export function Pengaturan() {
                     Kirim Test
                   </Button>
                 </div>
+                <p className="text-xs text-muted-foreground">
+                  Group ID diatur per kelas di menu{" "}
+                  <span className="font-medium">Manajemen Kelas</span>. Cara
+                  dapatkan Group ID: tanya ke Support Wablas (chat WA 24 jam di
+                  dashboard mereka) atau cek dokumentasi solo.wablas.com bagian
+                  "Get Group ID".
+                </p>
               </div>
+            </CardContent>
+          </Card>
 
-              <div className="border-t pt-4 space-y-3">
+          <Card>
+            <CardHeader>
+              <CardTitle>Jadwal Rekap Otomatis</CardTitle>
+              <CardDescription>
+                Rekap presensi dikirim otomatis ke grup WhatsApp tiap kelas pada
+                jam ini setiap hari. Pengecekan jadwal jalan tiap 5 menit, jadi
+                pengiriman bisa mundur maksimal ±5 menit dari jam yang di-set.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="font-medium">Antrian Retry Notifikasi</p>
-                    <p className="text-xs text-muted-foreground">
-                      Notifikasi yang gagal terkirim (misal device Wablas sempat
-                      disconnect) disimpan di sini, tidak hilang.
-                      {pendingRetryCount > 0 && (
-                        <>
-                          {" "}
-                          Saat ini ada{" "}
-                          <span className="font-medium text-amber-600">
-                            {pendingRetryCount} notifikasi
-                          </span>{" "}
-                          menunggu dikirim ulang.
-                        </>
-                      )}
+                    <p className="font-medium">Rekap Presensi Pagi</p>
+                    <p className="text-sm text-muted-foreground">
+                      Hadir / Terlambat / Izin / Sakit / Alfa
                     </p>
                   </div>
-                  <Button
-                    onClick={handleRetryNotifikasi}
-                    variant="outline"
-                    disabled={pendingRetryCount === 0 || retryingWa}
-                    className="cursor-pointer whitespace-nowrap"
-                  >
-                    {retryingWa ? "Mengirim ulang..." : "Retry Semua"}
-                  </Button>
+                  <Switch
+                    checked={settings.rekapPagiEnabled}
+                    onCheckedChange={(checked) =>
+                      setSettings({ ...settings, rekapPagiEnabled: checked })
+                    }
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="rekapPagiJam">Jam Kirim Rekap Pagi</Label>
+                  <Input
+                    id="rekapPagiJam"
+                    type="time"
+                    value={settings.rekapPagiJam}
+                    onChange={(e) =>
+                      setSettings({ ...settings, rekapPagiJam: e.target.value })
+                    }
+                    disabled={!settings.rekapPagiEnabled}
+                    className="w-40"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-3 border-t pt-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium">Rekap Presensi Pulang</p>
+                    <p className="text-sm text-muted-foreground">
+                      Daftar siswa yang sudah presensi pulang
+                    </p>
+                  </div>
+                  <Switch
+                    checked={settings.rekapPulangEnabled}
+                    onCheckedChange={(checked) =>
+                      setSettings({
+                        ...settings,
+                        rekapPulangEnabled: checked,
+                      })
+                    }
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="rekapPulangJam">Jam Kirim Rekap Pulang</Label>
+                  <Input
+                    id="rekapPulangJam"
+                    type="time"
+                    value={settings.rekapPulangJam}
+                    onChange={(e) =>
+                      setSettings({
+                        ...settings,
+                        rekapPulangJam: e.target.value,
+                      })
+                    }
+                    disabled={!settings.rekapPulangEnabled}
+                    className="w-40"
+                  />
                 </div>
               </div>
             </CardContent>
@@ -574,8 +622,8 @@ export function Pengaturan() {
             <CardHeader>
               <CardTitle>Template Notifikasi</CardTitle>
               <CardDescription>
-                Edit template pesan WhatsApp yang akan dikirim ke orang tua.
-                Gunakan{" "}
+                Edit template pesan (legacy, tidak dipakai oleh rekap grup —
+                cadangan kalau nanti balik ke notifikasi individual). Gunakan{" "}
                 <code className="bg-muted px-1 rounded text-xs">[nama]</code>{" "}
                 untuk nama siswa dan{" "}
                 <code className="bg-muted px-1 rounded text-xs">[jam]</code>{" "}

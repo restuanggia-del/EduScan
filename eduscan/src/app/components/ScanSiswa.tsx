@@ -25,7 +25,6 @@ import { supabase } from "../../lib/supabaseClient";
 import { toast } from "sonner";
 import { DaruratSiswa } from "./DaruratSiswa";
 import { getTodayLocal } from "../../lib/dateUtils";
-import { sendWhatsAppMessage, logNotifikasiGagal } from "../../lib/waGateway";
 
 interface AbsensiRecord {
   id: string;
@@ -48,15 +47,6 @@ interface Siswa {
   foto_url?: string;
   no_wa?: string;
 }
-
-const buildTemplates = (settingsData: any) => ({
-  templateMasuk: settingsData?.template_masuk || "",
-  templateTerlambat: settingsData?.template_terlambat || "",
-  templatePulang: settingsData?.template_pulang || "",
-  templateIzin: settingsData?.template_izin || "",
-  templateSakit: settingsData?.template_sakit || "",
-  templateAlfa: settingsData?.template_alfa || "",
-});
 
 export function ScanSiswa() {
   const [mode, setMode] = useState<"masuk" | "pulang">("masuk");
@@ -248,65 +238,6 @@ export function ScanSiswa() {
     };
   };
 
-  const sendWhatsAppNotification = async (
-    noWA: string,
-    nama: string,
-    jam: string,
-    type: "masuk" | "pulang" | "terlambat" | "izin" | "sakit" | "alfa",
-    namaSekolah: string,
-    token: string,
-    notifSettings: {
-      notifMasuk: boolean;
-      notifPulang: boolean;
-      notifTerlambat: boolean;
-    },
-    templates: {
-      templateMasuk: string;
-      templateTerlambat: string;
-      templatePulang: string;
-      templateIzin: string;
-      templateSakit: string;
-      templateAlfa: string;
-    },
-  ) => {
-    if (!token) return;
-
-    if (type === "masuk" && !notifSettings.notifMasuk) return;
-    if (type === "pulang" && !notifSettings.notifPulang) return;
-    if (type === "terlambat" && !notifSettings.notifTerlambat) return;
-
-    let nomor = noWA.replace(/\s+/g, "");
-    if (nomor.startsWith("0")) nomor = "62" + nomor.slice(1);
-    else if (nomor.startsWith("+")) nomor = nomor.slice(1);
-
-    const templateMap: Record<string, string> = {
-      masuk: templates.templateMasuk,
-      terlambat: templates.templateTerlambat,
-      pulang: templates.templatePulang,
-      izin: templates.templateIzin,
-      sakit: templates.templateSakit,
-      alfa: templates.templateAlfa,
-    };
-
-    const message = (templateMap[type] || "")
-      .replace(/\[nama\]/gi, nama)
-      .replace(/\[jam\]/gi, jam);
-
-    if (!message.trim()) return;
-
-    const result = await sendWhatsAppMessage(token, nomor, message);
-    if (!result.success) {
-      console.error("Gagal kirim WA:", result.message);
-      // Simpan ke antrian retry supaya tidak hilang (misal device lagi disconnect)
-      logNotifikasiGagal({
-        phone: nomor,
-        message,
-        jenis: `presensi_${type}`,
-        error: result.message,
-      });
-    }
-  };
-
   const handleManualAbsensi = async (
     siswa: Siswa,
     status: "hadir" | "terlambat" | "izin" | "sakit" | "alfa",
@@ -347,31 +278,6 @@ export function ScanSiswa() {
       );
       playSuccessSound();
 
-      const { data: settingsData } = await supabase
-        .from("settings")
-        .select("*")
-        .eq("id", 1)
-        .single();
-
-      if (settingsData?.whatsapp_enabled && siswa.no_wa) {
-        const templates = buildTemplates(settingsData);
-
-        await sendWhatsAppNotification(
-          siswa.no_wa,
-          siswa.nama,
-          getCurrentTime(),
-          status === "hadir" ? "masuk" : status,
-          settingsData.nama_sekolah,
-          settingsData.whatsapp_token,
-          {
-            notifMasuk: settingsData.notif_masuk,
-            notifPulang: settingsData.notif_pulang,
-            notifTerlambat: settingsData.notif_terlambat,
-          },
-          templates,
-        );
-      }
-
       await fetchTodayAbsensi();
     }
     setManualLoading(false);
@@ -384,26 +290,10 @@ export function ScanSiswa() {
     try {
       const data = JSON.parse(decodedText);
 
-      const { data: settingsData } = await supabase
-        .from("settings")
-        .select("*")
-        .eq("id", 1)
-        .single();
-
       const jadwalHariIni = await fetchJadwalHariIni();
       const jamMasukJadwal = jadwalHariIni.jam_masuk;
       const jamBatasPulang = jadwalHariIni.jam_pulang;
       const batasTerlambatMenit = jadwalHariIni.batas_terlambat_menit;
-      const whatsappEnabled = settingsData?.whatsapp_enabled || false;
-      const whatsappToken = settingsData?.whatsapp_token || "";
-      const namaSekolah = settingsData?.nama_sekolah || "Sekolah";
-      const notifSettings = {
-        notifMasuk: settingsData?.notif_masuk ?? true,
-        notifPulang: settingsData?.notif_pulang ?? true,
-        notifTerlambat: settingsData?.notif_terlambat ?? true,
-      };
-
-      const templates = buildTemplates(settingsData);
 
       const { data: siswa, error: siswaError } = await supabase
         .from("siswa")
@@ -478,19 +368,6 @@ export function ScanSiswa() {
         playSuccessSound();
         toast.success(`${siswa.nama} berhasil presensi masuk!`);
 
-        if (whatsappEnabled && siswa.no_wa) {
-          await sendWhatsAppNotification(
-            siswa.no_wa,
-            siswa.nama,
-            jamSekarang,
-            status === "terlambat" ? "terlambat" : "masuk",
-            namaSekolah,
-            whatsappToken,
-            notifSettings,
-            templates,
-          );
-        }
-
         setTimeout(() => setShowSuccess(false), 5000);
       } else {
         if (!sudahMasuk) {
@@ -538,19 +415,6 @@ export function ScanSiswa() {
         setShowSuccess(true);
         playSuccessSound();
         toast.success(`${siswa.nama} berhasil presensi pulang!`);
-
-        if (whatsappEnabled && siswa.no_wa) {
-          await sendWhatsAppNotification(
-            siswa.no_wa,
-            siswa.nama,
-            jamSekarang,
-            "pulang",
-            namaSekolah,
-            whatsappToken,
-            notifSettings,
-            templates,
-          );
-        }
 
         setTimeout(() => setShowSuccess(false), 5000);
       }

@@ -21,6 +21,7 @@ interface Kelas {
   waliKelas: string;
   waliKelasGuruId: string | null;
   jumlahSiswa: number;
+  whatsappGroupId: string | null;
 }
 
 export function ManajemenKelas() {
@@ -62,6 +63,7 @@ export function ManajemenKelas() {
           waliKelasGuruId: k.wali_kelas_guru_id,
           jumlahSiswa:
             siswaData?.filter((s) => s.kelas === k.nama_kelas).length || 0,
+          whatsappGroupId: k.whatsapp_group_id || null,
         })),
       );
     }
@@ -75,6 +77,7 @@ export function ManajemenKelas() {
         nama_kelas: formData.namaKelas,
         tingkat_kelas: formData.tingkatKelas,
         wali_kelas: "-",
+        whatsapp_group_id: formData.whatsappGroupId || null,
       });
 
       if (error) {
@@ -100,6 +103,7 @@ export function ManajemenKelas() {
         .update({
           nama_kelas: formData.namaKelas,
           tingkat_kelas: formData.tingkatKelas,
+          whatsapp_group_id: formData.whatsappGroupId || null,
         })
         .eq("id", editingKelas.id);
 
@@ -235,6 +239,23 @@ export function ManajemenKelas() {
               </p>
             </div>
 
+            <div className="space-y-2">
+              <Label htmlFor="whatsappGroupId">Group ID WhatsApp</Label>
+              <Input
+                id="whatsappGroupId"
+                value={formData.whatsappGroupId || ""}
+                onChange={(e) =>
+                  setFormData({ ...formData, whatsappGroupId: e.target.value })
+                }
+                placeholder="120363xxxxxxxxxx@g.us"
+              />
+              <p className="text-xs text-muted-foreground">
+                ID grup WhatsApp orang tua kelas ini. Rekap presensi otomatis
+                (Pengaturan &gt; Rekap Grup WA) dikirim ke sini. Kosongkan kalau
+                grup belum dibuat.
+              </p>
+            </div>
+
             <div className="flex justify-end gap-2 pt-4 border-t">
               <Button
                 variant="outline"
@@ -343,6 +364,18 @@ export function ManajemenKelas() {
                 <div>
                   <p className="text-sm text-muted-foreground">Jumlah Siswa</p>
                   <p className="font-medium">{kelas.jumlahSiswa} siswa</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Rekap Grup WA</p>
+                  {kelas.whatsappGroupId ? (
+                    <span className="inline-flex items-center gap-1 text-xs bg-green-100 text-green-700 rounded-full px-2 py-1 mt-1">
+                      Sudah diatur
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 text-xs bg-amber-100 text-amber-700 rounded-full px-2 py-1 mt-1">
+                      Belum diatur
+                    </span>
+                  )}
                 </div>
                 <div className="flex gap-2 pt-3 border-t">
                   <Button

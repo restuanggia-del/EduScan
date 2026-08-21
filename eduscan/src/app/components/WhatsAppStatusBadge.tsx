@@ -14,35 +14,63 @@ export function WhatsAppStatusBadge() {
 
   useEffect(() => {
     let intervalId: ReturnType<typeof setInterval>;
+    let cancelled = false;
 
     const check = async () => {
-      const { data } = await supabase
-        .from("settings")
-        .select("whatsapp_enabled, whatsapp_token")
-        .eq("id", 1)
-        .single();
+      try {
+        const { data, error } = await supabase
+          .from("settings")
+          .select("whatsapp_enabled, whatsapp_token")
+          .eq("id", 1)
+          .single();
 
-      if (!data?.whatsapp_enabled || !data?.whatsapp_token) {
+        if (cancelled) return;
+
+        if (error) {
+          console.error(
+            "[WhatsAppStatusBadge] Gagal ambil data settings:",
+            error.message,
+          );
+          setEnabled(false);
+          return;
+        }
+
+        if (!data?.whatsapp_enabled || !data?.whatsapp_token) {
+          setEnabled(false);
+          return;
+        }
+        setEnabled(true);
+
+        const result = await checkWablasConnection(data.whatsapp_token);
+        if (cancelled) return;
+        setConnected(result.connected);
+
+        if (result.error) {
+          console.error(
+            "[WhatsAppStatusBadge] Gagal cek koneksi Wablas:",
+            result.error,
+          );
+        }
+
+        if (wasConnectedRef.current === true && result.connected === false) {
+          toast.error(
+            "WhatsApp Gateway terputus! Notifikasi ke orang tua tidak akan terkirim sampai device di-scan ulang.",
+            { duration: 10000 },
+          );
+        }
+        wasConnectedRef.current = result.connected;
+      } catch (err) {
+        console.error("[WhatsAppStatusBadge] Error tak terduga:", err);
         setEnabled(false);
-        return;
       }
-      setEnabled(true);
-
-      const result = await checkWablasConnection(data.whatsapp_token);
-      setConnected(result.connected);
-
-      if (wasConnectedRef.current === true && result.connected === false) {
-        toast.error(
-          "WhatsApp Gateway terputus! Notifikasi ke orang tua tidak akan terkirim sampai device di-scan ulang.",
-          { duration: 10000 },
-        );
-      }
-      wasConnectedRef.current = result.connected;
     };
 
     check();
     intervalId = setInterval(check, CHECK_INTERVAL_MS);
-    return () => clearInterval(intervalId);
+    return () => {
+      cancelled = true;
+      clearInterval(intervalId);
+    };
   }, []);
 
   if (!enabled || connected === null) return null;

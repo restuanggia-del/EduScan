@@ -8,7 +8,6 @@ const corsHeaders = {
 const WABLAS_BASE_URL = "https://solo.wablas.com";
 
 Deno.serve(async (req: Request) => {
-    // Browser selalu kirim preflight OPTIONS dulu sebelum POST asli
     if (req.method === "OPTIONS") {
         return new Response("ok", { headers: corsHeaders });
     }

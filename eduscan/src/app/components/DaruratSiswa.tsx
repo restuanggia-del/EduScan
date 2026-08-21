@@ -5,7 +5,6 @@ import { Button } from "./ui/button";
 import { cn } from "./ui/utils";
 import { supabase } from "../../lib/supabaseClient";
 import { toast } from "sonner";
-import { sendWhatsAppBulk, logNotifikasiGagal } from "../../lib/waGateway";
 
 interface Kelas {
   id: string;
@@ -128,114 +127,6 @@ export function DaruratSiswa() {
     return acc;
   }, {});
 
-  const sendNotifikasiMassal = async (
-    hadirList: { nama: string; no_wa: string | null }[],
-    manualList: { nama: string; no_wa: string | null; status: StatusManual }[],
-  ) => {
-    const { data: settingsData } = await supabase
-      .from("settings")
-      .select(
-        "whatsapp_enabled, whatsapp_token, template_darurat, template_izin, template_sakit, template_alfa",
-      )
-      .eq("id", 1)
-      .single();
-
-    if (!settingsData?.whatsapp_enabled || !settingsData?.whatsapp_token)
-      return;
-
-    const jamSekarang = (() => {
-      const d = new Date();
-      return `${String(d.getHours()).padStart(2, "0")}:${String(
-        d.getMinutes(),
-      ).padStart(2, "0")}`;
-    })();
-
-    const templateDarurat =
-      settingsData.template_darurat ||
-      "Sehubungan dengan kondisi darurat di sekolah, siswa [nama] dicatat Hadir pada pukul [jam] WIB.";
-
-    const templateManualMap: Record<StatusManual, string> = {
-      izin:
-        settingsData.template_izin ||
-        "Ananda [nama] tidak hadir hari ini dengan keterangan Izin.",
-      sakit:
-        settingsData.template_sakit ||
-        "Ananda [nama] tidak hadir hari ini dengan keterangan Sakit.",
-      alfa:
-        settingsData.template_alfa ||
-        "Ananda [nama] tidak hadir hari ini tanpa keterangan (Alfa).",
-    };
-
-    const normalizeNomor = (noWa: string) => {
-      let nomor = noWa.replace(/\s+/g, "");
-      if (nomor.startsWith("0")) nomor = "62" + nomor.slice(1);
-      else if (nomor.startsWith("+")) nomor = nomor.slice(1);
-      return nomor;
-    };
-
-    const targets = [
-      ...hadirList
-        .filter((s) => s.no_wa)
-        .map((s) => ({
-          phone: normalizeNomor(s.no_wa as string),
-          message: templateDarurat
-            .replace(/\[nama\]/gi, s.nama)
-            .replace(/\[jam\]/gi, jamSekarang),
-        })),
-      ...manualList
-        .filter((e) => e.no_wa)
-        .map((e) => ({
-          phone: normalizeNomor(e.no_wa as string),
-          message: templateManualMap[e.status].replace(/\[nama\]/gi, e.nama),
-        })),
-    ];
-
-    if (targets.length === 0) return;
-
-    const toastId = toast.loading(
-      `Mengirim notifikasi WhatsApp 0/${targets.length}...`,
-    );
-
-    const { sent, failed, failedTargets } = await sendWhatsAppBulk(
-      settingsData.whatsapp_token,
-      targets,
-      {
-        random: true,
-        batchSize: 2,
-        delayBetweenBatchMs: 15000,
-        onProgress: (doneCount, total) => {
-          toast.loading(
-            `Mengirim notifikasi WhatsApp ${doneCount}/${total}...`,
-            {
-              id: toastId,
-            },
-          );
-        },
-      },
-    );
-
-    if (failedTargets.length > 0) {
-      const targetMap = new Map(targets.map((t) => [t.phone, t.message]));
-      for (const phone of failedTargets) {
-        const message = targetMap.get(phone);
-        if (message) {
-          logNotifikasiGagal({ phone, message, jenis: "darurat_massal" });
-        }
-      }
-    }
-
-    if (failed === 0) {
-      toast.success(`Notifikasi WhatsApp terkirim ke ${sent} wali murid.`, {
-        id: toastId,
-      });
-    } else {
-      toast.warning(
-        `Notifikasi WhatsApp: ${sent} terkirim, ${failed} gagal — sudah disimpan ke antrian retry (Pengaturan > WhatsApp).`,
-        { id: toastId },
-      );
-    }
-  };
-
   const handleKonfirmasi = async () => {
     if (rows.length === 0) return;
 
@@ -276,19 +167,10 @@ export function DaruratSiswa() {
 
     setSubmitting(false);
     toast.success(
-      `Data tersimpan — ${hadirRows.length} siswa Hadir, ${manualRows.length} siswa manual.`,
+      `Data tersimpan — ${hadirRows.length} siswa Hadir, ${manualRows.length} siswa manual. Akan otomatis muncul di rekap grup WhatsApp kelas masing-masing.`,
     );
     setRows([]);
     setHasLoadedOnce(false);
-
-    sendNotifikasiMassal(
-      hadirRows.map((r) => ({ nama: r.nama, no_wa: r.no_wa })),
-      manualRows.map((r) => ({
-        nama: r.nama,
-        no_wa: r.no_wa,
-        status: r.manualStatus,
-      })),
-    );
   };
 
   return (
