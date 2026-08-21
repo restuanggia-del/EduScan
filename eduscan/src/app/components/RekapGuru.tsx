@@ -46,6 +46,9 @@ export function RekapGuru() {
 
   const getDateRange = () => {
     const date = new Date(selectedDate);
+    const today = getTodayLocal();
+
+    const capToToday = (end: string) => (end > today ? today : end);
 
     if (filterType === "harian") {
       return { start: selectedDate, end: selectedDate };
@@ -59,7 +62,7 @@ export function RekapGuru() {
       sunday.setDate(monday.getDate() + 6);
       return {
         start: formatLocalDate(monday),
-        end: formatLocalDate(sunday),
+        end: capToToday(formatLocalDate(sunday)),
       };
     }
     if (filterType === "bulanan") {
@@ -67,7 +70,7 @@ export function RekapGuru() {
       const end = new Date(date.getFullYear(), date.getMonth() + 1, 0);
       return {
         start: formatLocalDate(start),
-        end: formatLocalDate(end),
+        end: capToToday(formatLocalDate(end)),
       };
     }
     if (filterType === "semester") {
@@ -77,14 +80,14 @@ export function RekapGuru() {
       const end = new Date(date.getFullYear(), isSem1 ? 6 : 12, 0);
       return {
         start: formatLocalDate(start),
-        end: formatLocalDate(end),
+        end: capToToday(formatLocalDate(end)),
       };
     }
     const start = new Date(date.getFullYear(), 0, 1);
     const end = new Date(date.getFullYear(), 11, 31);
     return {
       start: formatLocalDate(start),
-      end: formatLocalDate(end),
+      end: capToToday(formatLocalDate(end)),
     };
   };
 

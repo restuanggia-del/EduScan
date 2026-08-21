@@ -81,6 +81,9 @@ export function RekapSiswa() {
 
   const getDateRange = () => {
     const date = new Date(selectedDate);
+    const today = getTodayLocal();
+
+    const capToToday = (end: string) => (end > today ? today : end);
 
     if (filterType === "harian") {
       return {
@@ -98,7 +101,7 @@ export function RekapSiswa() {
       sunday.setDate(monday.getDate() + 6);
       return {
         start: formatLocalDate(monday),
-        end: formatLocalDate(sunday),
+        end: capToToday(formatLocalDate(sunday)),
       };
     }
 
@@ -107,7 +110,7 @@ export function RekapSiswa() {
       const end = new Date(date.getFullYear(), date.getMonth() + 1, 0);
       return {
         start: formatLocalDate(start),
-        end: formatLocalDate(end),
+        end: capToToday(formatLocalDate(end)),
       };
     }
 
@@ -118,7 +121,7 @@ export function RekapSiswa() {
       const end = new Date(date.getFullYear(), isSem1 ? 6 : 12, 0);
       return {
         start: formatLocalDate(start),
-        end: formatLocalDate(end),
+        end: capToToday(formatLocalDate(end)),
       };
     }
 
@@ -126,7 +129,7 @@ export function RekapSiswa() {
     const end = new Date(date.getFullYear(), 11, 31);
     return {
       start: formatLocalDate(start),
-      end: formatLocalDate(end),
+      end: capToToday(formatLocalDate(end)),
     };
   };
 
