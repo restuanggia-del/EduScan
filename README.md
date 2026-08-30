@@ -14,7 +14,7 @@ EduScan memudahkan pengelolaan absensi siswa menggunakan QR Code — guru cukup 
 | Vite | Build tool |
 | Tailwind CSS | Styling |
 | Supabase | Database, Auth, Storage, Realtime |
-| Fonnte | WhatsApp Gateway |
+| Wablas | WhatsApp Gateway |
 | Sonner | Notifikasi toast |
 | Recharts | Grafik dashboard |
 | html5-qrcode | Scanner QR Code |
@@ -46,17 +46,6 @@ EduScan memudahkan pengelolaan absensi siswa menggunakan QR Code — guru cukup 
 6. **Scan** kartu QR saat absensi di menu Scan Absensi
 7. **Lihat rekap** kehadiran di menu Rekap Absensi
 8. **Atur notifikasi** WhatsApp di menu Pengaturan
-
----
-
-## 📞 Notifikasi WhatsApp
-
-EduScan menggunakan [Fonnte](https://fonnte.com) sebagai WhatsApp Gateway.
-
-1. Daftar di fonnte.com
-2. Hubungkan WhatsApp device
-3. Copy API Token
-4. Paste di **EduScan → Pengaturan → Tab WhatsApp**
 
 ---
 
