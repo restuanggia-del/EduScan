@@ -1,19 +1,19 @@
 import { useState, useEffect, useCallback } from "react";
-import { Sidebar } from "./components/Sidebar";
-import { Header } from "./components/Header";
-import { Dashboard } from "./components/Dashboard";
-import { DataSiswa } from "./components/DataSiswa";
-import { ManajemenKelas } from "./components/ManajemenKelas";
-import { DataGuru } from "./components/DataGuru";
-import { GenerateQR } from "./components/GenerateQR";
-import { ScanAbsensi } from "./components/ScanAbsensi";
-import { Pengaturan } from "./components/Pengaturan";
+import { Sidebar } from "../components/layout/Sidebar";
+import { Header } from "../components/layout/Header";
+import { Dashboard } from "../features/dashboard/Dashboard";
+import { DataSiswa } from "../features/siswa/DataSiswa";
+import { ManajemenKelas } from "../features/kelas/ManajemenKelas";
+import { DataGuru } from "../features/guru/DataGuru";
+import { GenerateQR } from "../features/absensi/GenerateQR";
+import { ScanAbsensi } from "../features/absensi/ScanAbsensi";
+import { Pengaturan } from "../features/pengaturan/Pengaturan";
 import { Toaster } from "sonner";
-import { RekapAbsensi } from "./components/RekapAbsensi";
-import { AbsenSaya } from "./components/AbsenSaya";
-import { useAuth, getEffectiveRole } from "../lib/AuthContext";
-import { Login } from "./components/Login";
-import { Register } from "./components/Register";
+import { RekapAbsensi } from "../features/absensi/RekapAbsensi";
+import { AbsenSaya } from "../features/absensi/AbsenSaya";
+import { useAuth, getEffectiveRole } from "../contexts/AuthContext";
+import { Login } from "../features/auth/Login";
+import { Register } from "../features/auth/Register";
 
 export default function App() {
   const { user, loading } = useAuth();
